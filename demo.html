@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Mdjs Demo</title>
+		<script src="mdjs.min.js" type="text/javascript" charset="utf-8"></script>
+		<link rel="stylesheet" type="text/css" href="simpleMarkdown.css"/>
+	</head>
+	<body>
+		<span>选择本地Markdown文件:</span>
+		<input type="file" id="inputFile" />
+		<button type="button" id="analyze">解析成HTML</button>
+		<br />
+		<div id="result" class="md">
+		</div>
+		<script>
+			document.getElementById('analyze').onclick = function(){
+				files = document.getElementById('inputFile').files;
+				if(files.length==0)return ;
+				orif = files[0];
+				f = new FileReader();
+				f.readAsText(orif,'utf-8');
+				f.onload = function(){
+					var markdown = this.result;
+					var html = Mdjs.md2html(markdown);//核心语句
+					document.getElementById('result').innerHTML = html;
+				};
+			};
+		</script>
+	</body>
+</html>
