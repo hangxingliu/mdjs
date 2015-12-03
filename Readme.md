@@ -50,4 +50,4 @@ Mdjs遵循[Apache Licence 2.0](LICENSE)
 
 ## 开发手册
 
-[开发手册](wikis/Developer)
+[开发手册](http://git.oschina.net/voyageliu/mdjs/wikis/Developer)
