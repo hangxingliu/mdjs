@@ -9,7 +9,7 @@ window.Mdjs = {
 	 * @description 用于判断Markdown语句的正则表达式
 	 */
 	'regs' : {
-		'ul' : /^[\*\-] +\S*/g,
+		'ul' : /^[\*\-\+] +\S*/g,
 		'ol' : /^\d+\. +\S*/g,
 		'delHTML' : /<\/?[^<>]+>/g,
 	},
@@ -22,6 +22,7 @@ window.Mdjs = {
 		'tList' : ['<li>','<ol>','<ul>','</li>'],
 		'tP' : ['<p>','</p>'],
 		'tToc' : ['<div class="md_toc">','<ol>','</ol>','</div>'],
+		'tA': ['<a href="mailto:','<a href="','">','</a>'],
 	},
 	/**
 	 * @description 行内样式的HTML标签
@@ -55,12 +56,15 @@ window.Mdjs = {
 	 */
 	'_isHr' : function(str){
 		var c = str[0];
-		if(c!='=' && c!='-' && c!='_')return false;
-		if(str.length<3)return false;
-		for(var i=0;i<str.length;i++)
+		if(c!='=' && c!='-' && c!='_' && c!='*')return false;
+		for(var i=0,count=1;i<str.length;i++){
+			if(str[i]==' ' || str[i]=='\t')continue;
 			if(str[i]!=c)
 				return false;
-		return true;
+			count++;
+			if(count==3)break;
+		}
+		return count==3;
 	},
 	/**
 	 * @description 判断此句是否为列表语句
@@ -68,6 +72,7 @@ window.Mdjs = {
 	 * @return {Number} 0:不是列表,1:数字列表ol,2:无序列表ul
 	 */
 	'_isAList' : function(str){
+		if(Mdjs._isHr((str)))return 0;//0.2 Dev版添加的补丁,修正Hr与列表的冲突
 		if(str.search(Mdjs.regs.ol)!=-1)return 1;
 		if(str.search(Mdjs.regs.ul)!=-1)return 2;
 		return 0;
@@ -86,7 +91,41 @@ window.Mdjs = {
 		}
 		return lineLeft;
 	},
-	/*__________栈结构__________>>>>>*/
+	
+	/**
+	 * @description 对一个字符串进行HTML转义(把空格,<,>,",'转换为)
+	 * @param {String} str 字符串
+	 * @return {String} 转义后的HTML
+	 */
+	'_htmlSafer':function(str){
+		var str = str.replace(/&/g, '&gt;');
+		return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;').
+			replace(/\'/g, '&#39;').replace(/\"/g, '&quot;').replace(/\n/g, '</br>');
+	},
+	
+	/**
+	 * @description 判断一个语句start点后面有没有完整的]()的链接或图片的语句结构
+	 * @param {String} str Markdown语句
+	 * @param {Number} start 某一个起点,一般为[所在位置
+	 * @return {Boolean} 是否还有完整的结构
+	 */
+	'_isExpressAOrImg':function(str,start){
+		while(true){
+			var i = str.indexOf('](',start);
+			if(i==-1)return false;
+			//判断找到的](中的[不是被转义的字符
+			if(str[i-1]=='\\' && str[i-2]!='\\'){start=i+2;continue;}
+		while(true){
+			i = str.indexOf(')',i+1);
+			if(i==-1)return false;
+			//判断找到的)不是被转义的字符
+			if(str[i-1]=='\\' && str[i-2]!='\\')continue;
+			return true;
+		}
+		}
+	},
+	
+	/*__________栈结构(其实我现在才知道javascript数组可以push和pop的@Version 0.2 Dev Marked)______>>>>>*/
 	'_inn' : [],//存放语句前的空白字符数目 {Number}
 	'_inn2': [],//存放列表的类型 {Number}
 	'_innLen' : 0,//栈长度
@@ -204,12 +243,12 @@ window.Mdjs = {
 				//是区块引用>
 				if(lineTrim[0]=='>' && lineTrim.length>1){
 					res+=self.tag.tBlock[0]+
-						self.handlerInline(lineTrim,1)+'\n';
+						self.handlerInline(lineTrim,1)+'<br />';
 					for(var k=i+1;k<mds.length;k++){
 						tmpStr = mds[k].trim();
 						if(tmpStr.length==0)break;
 						if(tmpStr[0]=='>')tmpStr=tmpStr.slice(1);
-						res+=tmpStr+'\n';
+						res+=tmpStr+'<br />';
 					}
 					res+=self.tag.tBlock[1];
 					i = k - 1;
@@ -223,10 +262,6 @@ window.Mdjs = {
 					tocPos = res.length;
 					continue;
 				}
-				
-				//正常的一行
-				res += self.tag.tP[0] + self.handlerInline(lineTrim,0) + self.tag.tP[1];
-				continue;
 			}else{
 				//虽然空格数大于了4,但是还是有可能:
 				//代码块(需要检查上一行),普通文本
@@ -239,11 +274,25 @@ window.Mdjs = {
 					}
 					res += self.tag.tCode[1];
 					i=j-1;
-				}else{//普通文本
-					res += self.tag.tP[0] + self.handlerInline(lineTrim,0) + self.tag.tP[1];
+					continue;
 				}
-				continue;
 			}
+			//普通文本正常的一行
+			//真的是上面注释的那样吗?其实如果它的下一行是---或===的话,那这一行就是标题行了
+			if(i+1<mds.length){
+				tmpStr = mds[i+1].trim();
+				if(self._isHr(tmpStr)){//真的也,这行是标题
+					var level = 3;//默认三级
+					if(tmpStr[0]=='=')level=1;else if(tmpStr[0]=='-')level=2;
+					tocTitle[tocLen] = titleText = self.handlerInline(lineTrim,0);
+					tocLevel[tocLen++] = level;
+					res+='<h'+level+'>'+titleText+'</h'+level+'>\n';
+					i++;//跳行
+					continue;
+				}
+			}
+			//这下真的是普通的一行了
+			res += self.tag.tP[0] + self.handlerInline(lineTrim,0) + self.tag.tP[1];
 			//循环,一行结束
 		}
 		//如果需要输出目录
@@ -345,11 +394,18 @@ window.Mdjs = {
 		var strongStart = 0;
 		var emStart = 0;
 		var codeStart = 0;
+		//表示粗体或斜体的样式开始的时候用的符号:*或_
+		var lastStrongMark = '*';
+		var lastEmMark = '*';
+		//表示前面有"[","]"可以匹配"(",")"
+		var aOrImgStart = false;
 		
 		var aOrImg = 'a';//[]()表示链接还是图片
 		var isAImgTitle = false;//读取的时候读到的是链接或图片的标题吗?
 		var aImgTitle = '';//链接或图片的标题
 		var tmpChar = '';
+		var tmpInt = 0;
+		var tmpBool = true;
 		
 		for(var i=(start<0?0:start);i<len;i++){
 			switch(t[i]){
@@ -363,34 +419,90 @@ window.Mdjs = {
 				res+=self.inlineTag.tCode[codeStart];
 				codeStart=1^codeStart;
 				break;
-			case '*'://粗体斜体
-				if(t[i+1]=='*'){//粗体
+			case '*':
+			case '_'://粗体斜体
+				if(t[i+1]==t[i]){//粗体
+					if(strongStart==0)lastStrongMark = t[i];
+					else if(t[i]!=lastStrongMark){//表示正常的两个字符
+						if(isAImgTitle)aImgTitle+=t[i]+t[i];
+						else res+=t[i]+t[i];
+						i++;break;
+					}
 					res+=self.inlineTag.tStrong[strongStart];
 					strongStart=1^strongStart;
 					i++;
 				}else{//斜体
+					if(emStart==0)lastEmMark = t[i];
+					else if(t[i]!=lastEmMark){//表示正常的两个字符
+						if(isAImgTitle)aImgTitle+=t[i];
+						else res+=t[i];
+						break;
+					}
 					res+=self.inlineTag.tEm[emStart];
 					emStart=1^emStart;
 				}
 				break;
 			case '!'://图片
-				aOrImg = 'i';break;
+				if(t[i+1]=='[')aOrImg = 'i';
+				else if(isAImgTitle)aImgTitle+='!';//只是想表达一个叹号
+				else res+='!';
+				break;
 			case '['://要读取标题了
-				isAImgTitle = true;aImgTitle = '';break;
+				tmpBool = self._isExpressAOrImg(t,i);
+				if(tmpBool)console.log(aImgTitle);
+				if(!tmpBool || aOrImgStart){
+					tmpChar = '[';
+					if(t[i-1]=='!'){//误判了上一个叹号为图片修饰符,恢复
+						tmpChar='![';aOrImg='';
+					}
+					if(isAImgTitle)aImgTitle+=tmpChar;//只是想表达一个中括号
+					else res+=tmpChar;
+				}else{aOrImgStart = true;isAImgTitle = true;aImgTitle = '';}
+				break;
 			case ']'://标题读取完成
-				isAImgTitle = false;break;
+				if(aOrImgStart)isAImgTitle = false;
+				else{
+					if(isAImgTitle)aImgTitle+=']';//只是想表达一个中括号
+					else res+=']';
+				}
+				break;
 			case '('://读取链接部分,这时候要把链接或图片的前缀输出了
+				if(!aOrImgStart){res+='(';break;}//只是想表达一个括号
 				if(aOrImg=='i')res+=self.inlineTag.tImg[0];
 				else res+=self.inlineTag.tA[0];
 				break;
 			case ')'://读取链接部分完成
+				if(!aOrImgStart){res+=')';break;}//只是想表达一个括号
 				if(aOrImg=='i')res+=self.inlineTag.tImg[1];
 				else res+=self.inlineTag.tA[1];
-				res+=aImgTitle;//输出标题
-				if(aOrImg=='i')res+=self.inlineTag.tImg[2];
-				else res+=self.inlineTag.tA[2];
+				//输出标题(图片展位字符串)
+				if(aOrImg=='i'){//图片
+					res+=self._htmlSafer(aImgTitle)+self.inlineTag.tImg[2];
+				}else{//链接
+					res+=aImgTitle+self.inlineTag.tA[2];
+				}
 				aOrImg = '';//回复图片或链接
 				break;
+			case '<'://可能是自动链接或自动邮箱
+				if(!isAImgTitle){//不是标题才有可能
+				tmpInt = t.indexOf('>',i);
+				if(tmpInt!=-1){
+					tmpChar = t.slice(i+1,tmpInt);
+					if(tmpChar.search(/$\/?[\w ]*^/g)==-1){//第一次筛选,筛掉全部是字母或空格的HTML标签
+					if(tmpChar.search(/^\w+:\/\/\S*/g)==0){//第二次选出URL
+						res+=self.tag.tA[1]+tmpChar+self.tag.tA[2]+tmpChar+self.tag.tA[3];
+						i = tmpInt;break;
+					}if(tmpChar.search(/^\S+@\S+\.\w+$/g)==0){//第二次选出邮箱
+						res+=self.tag.tA[0]+tmpChar+self.tag.tA[2]+tmpChar+self.tag.tA[3];
+						i = tmpInt;break;
+					}
+					}
+				}else{//干脆连>收尾都找不到了,那就转义一下<并输出
+					if(isAImgTitle)aImgTitle+=t[i];
+					else res+= '&lt;';
+					break;
+				}
+				}
 			default://基本字符
 				if(isAImgTitle)aImgTitle+=t[i];
 				else res+=t[i];
