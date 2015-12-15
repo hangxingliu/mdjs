@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<title>Mdjs Demo</title>
-		<script src="mdjs.js" type="text/javascript" charset="utf-8"></script>
+		<script src="mdjs.min.js" type="text/javascript" charset="utf-8"></script>
 		<link rel="stylesheet" type="text/css" href="simpleMarkdown.css"/>
 	</head>
 	<body>
@@ -23,6 +23,7 @@
 				f.onload = function(){
 					var markdown = this.result;
 					var html = Mdjs.md2html(markdown);//核心语句
+					console.log(html);
 					document.getElementById('result').innerHTML = html;
 				};
 			};

@@ -1,6 +1,6 @@
 /**
  * @name MdJs
- * @version 0.1 Dev 2015/12/03
+ * @version 0.3 Dev 2015/12/15
  * @author Liuyue(Hangxingliu)
  * @description Mdjs是一个轻量级的Js的Markdown文件解析器
  */
@@ -13,16 +13,23 @@ window.Mdjs = {
 		'ol' : /^\d+\. +\S*/g,
 		'delHTML' : /<\/?[^<>]+>/g,
 	},
+	/**
+	 * @description 表格列的对齐样式class="md_table_xxx"
+	 */
+	'tbAlign':['left','mid','right'],
 	 /**
-	 * @description0 整行样式的HTML标签
+	 * @description 整行样式的HTML标签
 	 */
 	'tag' : {
-		'tBlock': ['<blockquote><p>','</p></blockquote>'],
-		'tCode' : ['<pre><code data-lang="$lang">','</code></pre>'],//lang会被替换被具体语言,若没设置具体语言则为空白字符串
-		'tList' : ['<li>','<ol>','<ul>','</li>'],
-		'tP' : ['<p>','</p>'],
-		'tToc' : ['<div class="md_toc">','<ol>','</ol>','</div>'],
-		'tA': ['<a href="mailto:','<a href="','">','</a>'],
+		'tBlock': ['<blockquote><p>','</p></blockquote>\n'],
+		'tCode'	: ['<pre><code data-lang="$lang">','</code></pre>\n'],//lang会被替换被具体语言,若没设置具体语言则为空白字符串
+		'tList'	: ['<li>','<ol>','<ul>','</li>'],
+		'tP'	: ['<p>','</p>'],
+		'tToc'	: ['<div class="md_toc">\n','<ol>\n',
+			'<a href="#$href"><li>','</li></a>','</ol>','</div>\n'],
+		'tA'	: ['<a href="mailto:','<a href="','">','</a>'],
+		'tTable': ['<table class="md_table">\n<thead>\n','</thead>\n<tbody>\n','</tbody>\n</table>\n','<tr>','</tr>\n',//0,1,2,3,4
+			'<th class="$align">','</th>','<td class="$align">','</td>','md_table_'],//5,6,7,8,9
 	},
 	/**
 	 * @description 行内样式的HTML标签
@@ -35,9 +42,9 @@ window.Mdjs = {
 		'tImg' : ['<img src="','" title="','" />'],
 	},
 	/**
-	 * @description 可以用斜杠转义的字符
+	 * @description 可以用斜杠转义的字符(0.3加入|转义)
 	 */
-	'_meaning' : "#`*[]()-_{}+.!\\",
+	'_meaning' : "#`*[]()-_{}+.!|\\",
 	
 	/**
 	 * @description 判断一个元素是否在数组中
@@ -57,14 +64,14 @@ window.Mdjs = {
 	'_isHr' : function(str){
 		var c = str[0];
 		if(c!='=' && c!='-' && c!='_' && c!='*')return false;
-		for(var i=0,count=1;i<str.length;i++){
+		for(var i=0,count=0;i<str.length;i++){
 			if(str[i]==' ' || str[i]=='\t')continue;
 			if(str[i]!=c)
 				return false;
 			count++;
-			if(count==3)break;
+			//if(count==3)break; Fix Bug 如果是这样的一句:如果一句***后面还有内容就当成正常语句输出
 		}
-		return count==3;
+		return count>=3;
 	},
 	/**
 	 * @description 判断此句是否为列表语句
@@ -72,9 +79,9 @@ window.Mdjs = {
 	 * @return {Number} 0:不是列表,1:数字列表ol,2:无序列表ul
 	 */
 	'_isAList' : function(str){
-		if(Mdjs._isHr((str)))return 0;//0.2 Dev版添加的补丁,修正Hr与列表的冲突
-		if(str.search(Mdjs.regs.ol)!=-1)return 1;
-		if(str.search(Mdjs.regs.ul)!=-1)return 2;
+		if(this._isHr((str)))return 0;//0.2 Dev版添加的补丁,修正Hr与列表的冲突
+		if(str.search(this.regs.ol)!=-1)return 1;
+		if(str.search(this.regs.ul)!=-1)return 2;
 		return 0;
 	},
 	/**
@@ -113,13 +120,13 @@ window.Mdjs = {
 		while(true){
 			var i = str.indexOf('](',start);
 			if(i==-1)return false;
-			//判断找到的](中的[不是被转义的字符
-			if(str[i-1]=='\\' && str[i-2]!='\\'){start=i+2;continue;}
+			//判断找到的](中的]不是被转义的字符
+			if(str[i-1]=='\\' && str[i-2]!='\\'){start=i+2;continue;}//FIXME 多重转义字符
 		while(true){
 			i = str.indexOf(')',i+1);
 			if(i==-1)return false;
 			//判断找到的)不是被转义的字符
-			if(str[i-1]=='\\' && str[i-2]!='\\')continue;
+			if(str[i-1]=='\\' && str[i-2]!='\\')continue;//FIXME 多重转义字符
 			return true;
 		}
 		}
@@ -133,13 +140,13 @@ window.Mdjs = {
 	 * @return {Number} 弹出Top元素的空白字符数目 | -1
 	 */
 	'_iTop' : function(){
-		return Mdjs._innLen == 0?-1:Mdjs._inn[Mdjs._innLen-1];
+		return this._innLen == 0?-1:this._inn[this._innLen-1];
 	},
 	/**
 	 * @return {Number} 弹出Top元素的列表类型 | -1
 	 */
 	'_iTop2' : function(){
-		return Mdjs._inn2[Mdjs._innLen-1];
+		return this._inn2[this._innLen-1];
 	},
 	/**
 	 * @description 压"列表元素"入栈
@@ -147,16 +154,16 @@ window.Mdjs = {
 	 * @param {Number} v2 列表的类型
 	 */
 	'_iPush': function(v,v2){
-		Mdjs._inn[Mdjs._innLen] = v;
-		Mdjs._inn2[Mdjs._innLen++] = v2;
+		this._inn[this._innLen] = v;
+		this._inn2[this._innLen++] = v2;
 	},
 	/**
 	 * @description 将栈的Top元素弹出
 	 * @return {Boolean} 是否弹出成功
 	 */
 	'_iPop' : function(){
-		if(Mdjs._innLen == 0)return false;
-		Mdjs._innLen--;return true;
+		if(this._innLen == 0)return false;
+		this._innLen--;return true;
 	},
 	/*<<<<<__________栈结构__________*/
 	
@@ -167,8 +174,16 @@ window.Mdjs = {
 	 * @return {String} HTML
 	 */
 	'md2html' : function(md,options){
-		self = Mdjs;
-		return Mdjs.handlerLines(md.split(/[\n|\r]/g));
+		//self = Mdjs;好吧,原谅我对Web的了解不是很深,我在0.3Dev版中才改掉
+		//return Mdjs.handlerLines(md.split(/[\n]/g));//这种方法会导致不同系统的文档显示出现问题
+		var lines = [];
+		for(var i=0,last=0,len=md.length;i<len;i++){
+			if(md[i]=='\r')lines.push(md.slice(last,i)),i+=md[i+1]=='\n'?1:0;
+			else if(md[i]=='\n')lines.push(md.slice(last,i));
+			else continue;
+			last=i+1;
+		}if(last<len)lines.push(md.slice(last));
+		return Mdjs.handlerLines(lines);
 	},
 	
 	/**
@@ -181,6 +196,9 @@ window.Mdjs = {
 		var nowInCode = 0;//目前处理的这行是不是代码,大于等于1就是
 		var lineTrim = '';//当前行去掉两端空白字符后的字符串
 		var lineLeft = 0;//当前行左端的空格字符数量,//1个Tab=4个空格
+		
+		var tbRet = [];//存放表格行解析出来的列数组
+		var tbFmt = [];//存放表格每列的对齐格式
 		
 		var tocPos = -1;//哪儿要输出目录结构
 		var tocTitle = [];//记录目录每个节点的标题
@@ -195,34 +213,34 @@ window.Mdjs = {
 			if(nowInCode>0){
 				if(lineTrim=='```'){//代码结束了
 					nowInCode=0;
-					res+=self.tag.tCode[1];
+					res+=this.tag.tCode[1];
 					continue;
 				}
-				res+=(nowInCode==1?'':'\n')+mds[i],nowInCode++;
+				res+=(nowInCode==1?'':'\n')+this._htmlSafer(mds[i]);nowInCode++;
 				continue;
 			}
 			
 			//计算行前空格数
-			lineLeft = self._leftSpace(mds[i]);
+			lineLeft = this._leftSpace(mds[i]);
 			
 			//列表行
-			var l = self._isAList(lineTrim);
+			var l = this._isAList(lineTrim);
 			if(l!=0){
-				res += self.handlerList(lineLeft,l,lineTrim);
+				res += this.handlerList(lineLeft,l,lineTrim);
 				continue;
 			}
-			res+= self.handlerListEnd();
+			res+= this.handlerListEnd();
 			
 			//空白行
 			if(lineTrim.length==0){
-				res+='<br />';continue;
+				res+='<br />\n';continue;
 			}
 
 			//没有Tab键在行前
 			if(lineLeft < 4){
 				if(lineTrim.slice(0,3)=='```'){//进入代码块
 					lang = lineTrim.slice(3).trim();
-					res+=self.tag.tCode[0].replace('$lang',lang);
+					res+=this.tag.tCode[0].replace('$lang',lang);
 					nowInCode = 1;continue;
 				}
 				
@@ -233,73 +251,95 @@ window.Mdjs = {
 				//是标题
 				if(j!=0){
 					var cutEnd = lineTrim.indexOf('#',j);
-					var titleText = cutEnd==-1?lineTrim.slice(j):lineTrim.slice(cutEnd);
-					tocTitle[tocLen] = titleText = self.handlerInline(titleText,0);
-					tocLevel[tocLen++] = j;
-					res+='<h'+j+'>'+titleText+'</h'+j+'>\n';
+					var titleText = cutEnd==-1?lineTrim.slice(j):lineTrim.slice(j,cutEnd);
+					//tocMark给当前标题标记的ID和name,为了能让TOC目录点击跳转
+					var tocMark = titleText = this.handlerInline(titleText,0);
+					tocLevel[tocLen]  = j;
+					tocTitle[tocLen++]= tocMark = tocMark.trim().replace(this.regs.delHTML,'');
+					res+='<h'+j+' id="'+tocMark+'" name="'+tocMark+'">'+titleText+'</h'+j+'>\n';
 					continue;
 				}
 				
 				//是区块引用>
 				if(lineTrim[0]=='>' && lineTrim.length>1){
-					res+=self.tag.tBlock[0]+
-						self.handlerInline(lineTrim,1)+'<br />';
+					res+=this.tag.tBlock[0]+
+						this.handlerInline(lineTrim,1)+'<br />\n';
 					for(var k=i+1;k<mds.length;k++){
 						tmpStr = mds[k].trim();
 						if(tmpStr.length==0)break;
 						if(tmpStr[0]=='>')tmpStr=tmpStr.slice(1);
-						res+=tmpStr+'<br />';
+						res+=this.handlerInline(tmpStr,0)+'<br />\n';
 					}
-					res+=self.tag.tBlock[1];
+					res+=this.tag.tBlock[1];
 					i = k - 1;
 					continue;
 				}
 				//横线
-				if(self._isHr(lineTrim)){res+='<hr />';continue;}
+				if(this._isHr(lineTrim)){res+='<hr />';continue;}
 				
 				//目录
 				if(lineTrim == '[TOC]'){
 					tocPos = res.length;
 					continue;
 				}
+				
+				//表格
+				if((tbRet = this.handlerTbLine(lineTrim)) != false){//可能是表格
+					//两行表格语句确定表格结构
+					if(i<mds.length-1 && (tbFmt = this.handlerTbFmt(mds[i+1].trim(),tbRet.length) )!=false){
+						//表格头部
+						res+=this.tag.tTable[0]+this.tag.tTable[3]+this.genTbTr(tbRet,tbFmt,true)+this.tag.tTable[4];
+						res+=this.tag.tTable[1];//表格主体开始
+						for(var j=i+2;j<mds.length;j++){
+							if((tbRet = this.handlerTbLine(mds[j].trim())) == false)break;//不是表格语句了
+							res+=this.tag.tTable[3]+this.genTbTr(tbRet,tbFmt,false)+this.tag.tTable[4];
+						}
+						i=j-1;res+=this.tag.tTable[2];
+						continue;
+					}
+				}
+				
 			}else{
 				//虽然空格数大于了4,但是还是有可能:
 				//代码块(需要检查上一行),普通文本
 				//代码块
 				if(i==0 || mds[i-1].trim().length == 0){
-					res += self.tag.tCode[0].replace('$lang','') + self.handlerInline(mds[i],0);
+					res += this.tag.tCode[0].replace('$lang','') + this._htmlSafer(mds[i]);
 					for(var j=i+1;j<mds.length;j++){
-						if(self._leftSpace(mds[j])<4)break;
-						res += '\n'+ self.handlerInline(mds[j],0);
+						if(this._leftSpace(mds[j])<4)break;
+						res += '\n'+ this._htmlSafer(mds[j]);
 					}
-					res += self.tag.tCode[1];
+					res += this.tag.tCode[1];
 					i=j-1;
 					continue;
 				}
 			}
+			
 			//普通文本正常的一行
 			//真的是上面注释的那样吗?其实如果它的下一行是---或===的话,那这一行就是标题行了
 			if(i+1<mds.length){
 				tmpStr = mds[i+1].trim();
-				if(self._isHr(tmpStr)){//真的也,这行是标题
+				if(this._isHr(tmpStr)){//真的也,这行是标题
 					var level = 3;//默认三级
 					if(tmpStr[0]=='=')level=1;else if(tmpStr[0]=='-')level=2;
-					tocTitle[tocLen] = titleText = self.handlerInline(lineTrim,0);
-					tocLevel[tocLen++] = level;
-					res+='<h'+level+'>'+titleText+'</h'+level+'>\n';
+					var tocMark = titleText = this.handlerInline(lineTrim,0);
+					tocLevel[tocLen]  = level;
+					tocTitle[tocLen++]= tocMark = tocMark.trim().replace(this.regs.delHTML,'');
+					res+='<h'+level+' id="'+tocMark+'" name="'+tocMark+'">'+titleText+'</h'+level+'>\n';
 					i++;//跳行
 					continue;
 				}
 			}
+			
 			//这下真的是普通的一行了
-			res += self.tag.tP[0] + self.handlerInline(lineTrim,0) + self.tag.tP[1];
+			res += this.tag.tP[0] + this.handlerInline(lineTrim,0) + this.tag.tP[1];
 			//循环,一行结束
 		}
 		//如果需要输出目录
 		if(tocPos!=-1){
 			var res1 = res.slice(0,tocPos);
 			res = res.slice(tocPos);
-			res = res1 + self.handlerTOC(tocTitle,tocLevel,tocLen) + res;
+			res = res1 + this.handlerTOC(tocTitle,tocLevel,tocLen) + res;
 		}
 		return res;
 	},
@@ -312,22 +352,22 @@ window.Mdjs = {
 	 * @return {String} TOC目录的HTML代码
 	 */
 	'handlerTOC' : function(tocTitle,tocLevel,tocLen){
-		var res = self.tag.tToc[0];
+		var res = this.tag.tToc[0];
 		var tocI = [];
 		var tocILen = 0;
 		var liHTML;
 		for(var i=0;i<tocLen;i++){
-			liHTML = '<li>'+tocTitle[i].replace(self.regs.delHTML,'')+'</li>'
+			liHTML = this.tag.tToc[2].replace('$href',tocTitle[i]) +tocTitle[i]+this.tag.tToc[3];
 			if(tocILen == 0 || tocLevel[i]>tocI[tocILen-1]){
-				res += self.tag.tToc[1]+liHTML;tocI[tocILen++] = tocLevel[i];
+				res += this.tag.tToc[1]+liHTML;tocI[tocILen++] = tocLevel[i];
 			}else if(tocLevel[i]==tocI[tocILen-1]){
 				res += liHTML;
 			}else{
-				res += self.tag.tToc[2];tocILen--;i--;
+				res += this.tag.tToc[4];tocILen--;i--;
 			}
 		}
-		while((tocILen--)>0)res += self.tag.tToc[2];
-		return res+self.tag.tToc[3];
+		while((tocILen--)>0)res += this.tag.tToc[4];
+		return res+this.tag.tToc[5];
 	},
 	
 	/**
@@ -336,12 +376,12 @@ window.Mdjs = {
 	 */
 	'handlerListEnd' : function(){
 		var res = '';
-		while(self._iTop()!=-1){
-			if(self._iTop2()==1)//数字列表
+		while(this._iTop()!=-1){
+			if(this._iTop2()==1)//数字列表
 				res+='</ol>\n';
 			else//无序列表
 				res+='</ul>\n';
-			self._iPop();
+			this._iPop();
 		}
 		return res;
 	},
@@ -354,32 +394,103 @@ window.Mdjs = {
 	 * @return {String} 此句Markdown的HTML
 	 */
 	'handlerList' : function(level,type,str){
-		var topLevel = self._iTop();//上一个列表的层次
-		var liHTML = self.tag.tList[0] + self.handlerInline(str,str.indexOf(' '),0) + self.tag.tList[3];
+		var topLevel = this._iTop();//上一个列表的层次
+		var liHTML = this.tag.tList[0] + this.handlerInline(str,str.indexOf(' '),0) + this.tag.tList[3];
 		var res = '';
 		if(level > topLevel){//上一个列表的___子列表___
-			self._iPush(level,type);
-			return self.tag.tList[type] + liHTML;
+			this._iPush(level,type);
+			return this.tag.tList[type] + liHTML;
 		}else if(level == topLevel){//上一个列表的___兄弟(并列)列表___
 			return liHTML;
 		}else{//上一个列表的___父列表___的___兄弟列表___
 			while(level<topLevel){//找到属于这个列表的兄弟列表
-				if(self._iTop2()==1)//数字列表
+				if(this._iTop2()==1)//数字列表
 					res+='</ol>\n';
 				else//无序列表
 					res+='</ul>\n';
-				self._iPop();
-				topLevel = self._iTop();
+				this._iPop();
+				topLevel = this._iTop();
 			}
 			if(topLevel==-1){//这个列表是最顶层的列表,即暂时没有兄弟列表,是一个新的列表集的开始
-				self._iPush(level,type);
-				return res + self.tag.tList[type] + liHTML;
+				this._iPush(level,type);
+				return res + this.tag.tList[type] + liHTML;
 			}else{
 				return res + liHTML;
 			}
 		}
 	},
 	
+	/**
+	 * 通过给定的表格列数组和表格格式生成一个tr的HTML语句
+	 * @param {Array} tbRet 表格列数组
+	 * @param {Array} tbFmt 表格对齐格式数组
+	 * @param {Boolean} isHead 是否为头部(thead)的tr
+	 * @return {String} 一个tr的HTML语句
+	 */
+	'genTbTr':function(tbRet,tbFmt,isHead){
+		var res ='';
+		for(var k=0;k<tbRet.length;k++)
+			res+=this.tag.tTable[isHead?5:7].replace('$align',this.tag.tTable[9]+this.tbAlign[tbFmt[k]])//替换对齐样式
+				+this.handlerInline(tbRet[k],0)//表格内容
+				+this.tag.tTable[isHead?6:8];
+		return res;
+	},
+	
+	/**
+	 * @description 解析表格格式行,即为表格第二行,格式说明(0:左对齐,1:居中,2:右对齐)
+	 * @param {String} tStr trim()过的语句字符串
+	 * @param {Number} col 表格头部标明了有多少列,如果实际解析出来的没有这么多列,则用0(左对齐)补齐剩下的列
+	 * @return {Array|Boolean} 如果此语句是表格格式行则返回解析出来的格式,否则返回false
+	 */
+	'handlerTbFmt':function(tStr,col){
+		var r = this.handlerTbLine(tStr,true);//初步解析表格语句
+		var ret = [];//返回结果
+		var i = 0,tmp = 0;//i:循环变量,tmp:临时变量
+		if(r==false)return false;//不是格式行
+		for(var len=r.length;i<len;i++,tmp=0){
+			if(r[i].length<=1){ret[i] = 0;continue;}//如果格式描述字符串长度为1,则左对齐
+			if(r[i][r[i].length-1]==':')tmp = (r[i][0]==':')?1:2;//右边有:,右对齐,左边又有:,居中
+			ret[i] = tmp;//存入返回结果
+		}
+		for(;i<col;i++)ret[i]=0;//补齐剩下的列
+		return ret;
+	},
+	/**
+	 * @description 解析表格中的行,将一行表格语句分解成一列一列的数组
+	 * @param {String} tStr trim()过的语句字符串
+	 * @param {Boolean} isFmtL 此行是否应该为格式行,默认false
+	 * @return {Array|Boolean} 如果此语句是表格中的行则返回解析出来的每一列组成的数组,
+	 * 否则返回false(如果指定为格式行,则若不满足格式行的要求,也会返回false)
+	 */
+	'handlerTbLine':function(tStr,isFmtL){
+		var ret = [];//返回结果
+		var len = tStr.length;//语句长度
+		var tmpStr = '';//解析时临时存储用的字符串,此处临时存当前列的数据
+		if(isFmtL==undefined)isFmtL = false;//默认不是格式行
+		for(var i=(tStr[0]=='|'?1:0);i<len;i++){//抛弃首个|
+			switch(tStr[i]){
+			case '\\'://转义字符
+				if(isFmtL)return false;//格式行不应该有这个字符
+				tmpStr+='\\';
+				if(tStr[i+1]=='|')tmpStr+='|',i++;//转义的|,应该被输出
+				continue;
+			case '|'://分隔符
+				tmpStr = tmpStr.trim();
+				if(isFmtL && tmpStr.length==0)return false;//格式行不允许列格式字符串为空
+				ret.push(tmpStr);//存入返回结果
+				tmpStr = '';
+				continue;
+			}
+			//其他字符,如果格式行出现其他字符,则说明不是正常格式行
+			if(!isFmtL||tStr[i]==':'||tStr[i]=='-'||tStr[i]==' '||tStr[i]=='\t')tmpStr+=tStr[i];
+			else return false;
+		}
+		//没有有效的表格列,证明不是表格
+		if(ret.length==0 && tStr[0]!='|')return false;
+		tmpStr = tmpStr.trim();
+		if(tmpStr.length!=0)ret.push(tmpStr);//保存最后一列的数据
+		return ret;
+	},
 	/**
 	 * @description 处理一行Markdown语句(已经去掉了头部的修饰的语句,例如去掉了标题#符号,引用>符号等等...)
 	 * @param {String} text 去掉了头部的Markdown语句
@@ -410,13 +521,13 @@ window.Mdjs = {
 		for(var i=(start<0?0:start);i<len;i++){
 			switch(t[i]){
 			case '\\'://转义字符
-				if(self._inArray(t[i+1],self._meaning))tmpChar=t[++i];
+				if(this._inArray(t[i+1],this._meaning))tmpChar=t[++i];
 				else tmpChar=t[i];
 				if(isAImgTitle)aImgTitle+=tmpChar;
 				else res+=tmpChar;
 				break;
 			case '`'://行内代码
-				res+=self.inlineTag.tCode[codeStart];
+				res+=this.inlineTag.tCode[codeStart];
 				codeStart=1^codeStart;
 				break;
 			case '*':
@@ -428,7 +539,8 @@ window.Mdjs = {
 						else res+=t[i]+t[i];
 						i++;break;
 					}
-					res+=self.inlineTag.tStrong[strongStart];
+					if(aOrImgStart)res+=t[i]+t[i+1];//如果是图片/链接的URL中有*_符号
+					else res+=this.inlineTag.tStrong[strongStart];
 					strongStart=1^strongStart;
 					i++;
 				}else{//斜体
@@ -438,19 +550,33 @@ window.Mdjs = {
 						else res+=t[i];
 						break;
 					}
-					res+=self.inlineTag.tEm[emStart];
+					if(aOrImgStart)res+=t[i];//如果是图片/链接的URL中有*_符号
+					else res+=this.inlineTag.tEm[emStart];
 					emStart=1^emStart;
 				}
 				break;
 			case '!'://图片
-				if(t[i+1]=='[')aOrImg = 'i';
-				else if(isAImgTitle)aImgTitle+='!';//只是想表达一个叹号
+				if(isAImgTitle){//这个叹号出现在 图片或链接的标题(中括号)内
+					if(t[i+1]!='['){aImgTitle+='!';break;}//只是想表达一个叹号
+					//链接标题要显示图片,即链接内嵌图片
+					var valid=false;//用于验证图片个结构是否合法,true:表示已经有](结构了,
+					for(var j=i+2;j<len;j++){//为了找到内嵌图片的结尾)
+						if(t[j]=='\\')j++;//转义字符
+						else if(t[j]==']'){
+							if(t[j+1]=='(')valid=true,j++;//当作内嵌图片结构合法
+							else{j=len;break;}//不是内嵌图片
+						}else if(t[j]==')' && valid)break;//结构结尾
+					}
+					//输出图片HTML,其实这步就是递归handlerInLine处理一个图片结构标记
+					if(j<len)aImgTitle+=this.handlerInline(t.slice(i,j+1),0),i=j;
+					else aImgTitle+='!';
+				}else if(t[i+1]=='[')aOrImg = 'i';//图片(非链接内嵌图片)标记开始了
 				else res+='!';
 				break;
 			case '['://要读取标题了
-				tmpBool = self._isExpressAOrImg(t,i);
-				if(tmpBool)console.log(aImgTitle);
-				if(!tmpBool || aOrImgStart){
+				tmpBool = this._isExpressAOrImg(t,i);
+				//if(tmpBool)console.log(aImgTitle);
+				if(!tmpBool || aOrImgStart){//如果这个[后面的结构_不_完整或者已经开始了一个[]()结构
 					tmpChar = '[';
 					if(t[i-1]=='!'){//误判了上一个叹号为图片修饰符,恢复
 						tmpChar='![';aOrImg='';
@@ -468,20 +594,23 @@ window.Mdjs = {
 				break;
 			case '('://读取链接部分,这时候要把链接或图片的前缀输出了
 				if(!aOrImgStart){res+='(';break;}//只是想表达一个括号
-				if(aOrImg=='i')res+=self.inlineTag.tImg[0];
-				else res+=self.inlineTag.tA[0];
+				else if(isAImgTitle){aImgTitle+='(';break;}//在标题里表达一个括号
+				if(aOrImg=='i')res+=this.inlineTag.tImg[0];
+				else res+=this.inlineTag.tA[0];
 				break;
 			case ')'://读取链接部分完成
 				if(!aOrImgStart){res+=')';break;}//只是想表达一个括号
-				if(aOrImg=='i')res+=self.inlineTag.tImg[1];
-				else res+=self.inlineTag.tA[1];
+				else if(isAImgTitle){aImgTitle+=')';break;}//在标题里表达一个括号
+				if(aOrImg=='i')res+=this.inlineTag.tImg[1];
+				else res+=this.inlineTag.tA[1];
 				//输出标题(图片展位字符串)
 				if(aOrImg=='i'){//图片
-					res+=self._htmlSafer(aImgTitle)+self.inlineTag.tImg[2];
+					res+=this._htmlSafer(aImgTitle)+this.inlineTag.tImg[2];
 				}else{//链接
-					res+=aImgTitle+self.inlineTag.tA[2];
+					res+=aImgTitle+this.inlineTag.tA[2];
 				}
-				aOrImg = '';//回复图片或链接
+				aOrImg = '';//恢复图片或链接
+				aOrImgStart = false;
 				break;
 			case '<'://可能是自动链接或自动邮箱
 				if(!isAImgTitle){//不是标题才有可能
@@ -490,10 +619,10 @@ window.Mdjs = {
 					tmpChar = t.slice(i+1,tmpInt);
 					if(tmpChar.search(/$\/?[\w ]*^/g)==-1){//第一次筛选,筛掉全部是字母或空格的HTML标签
 					if(tmpChar.search(/^\w+:\/\/\S*/g)==0){//第二次选出URL
-						res+=self.tag.tA[1]+tmpChar+self.tag.tA[2]+tmpChar+self.tag.tA[3];
+						res+=this.tag.tA[1]+tmpChar+this.tag.tA[2]+tmpChar+this.tag.tA[3];
 						i = tmpInt;break;
 					}if(tmpChar.search(/^\S+@\S+\.\w+$/g)==0){//第二次选出邮箱
-						res+=self.tag.tA[0]+tmpChar+self.tag.tA[2]+tmpChar+self.tag.tA[3];
+						res+=this.tag.tA[0]+tmpChar+this.tag.tA[2]+tmpChar+this.tag.tA[3];
 						i = tmpInt;break;
 					}
 					}
@@ -509,9 +638,9 @@ window.Mdjs = {
 			}
 		}
 		//如果此句结束了粗体,斜体,行内代码还没有正常结束的话就自动补充
-		if(codeStart==1)res+=self.inlineTag.tCode[1];
-		if(emStart==1)res+=self.inlineTag.tEm[1];
-		if(strongStart==1)res+=self.inlineTag.tStrong[1];
+		if(codeStart==1)res+=this.inlineTag.tCode[1];
+		if(emStart==1)res+=this.inlineTag.tEm[1];
+		if(strongStart==1)res+=this.inlineTag.tStrong[1];
 		return res;
 	},
 	
