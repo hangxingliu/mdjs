@@ -1,6 +1,6 @@
 /**
  * @name MdJs
- * @version 0.3 Dev 2015/12/15
+ * @version 0.31 Dev 2015/12/28
  * @author Liuyue(Hangxingliu)
  * @description Mdjs是一个轻量级的Js的Markdown文件解析器
  */
@@ -187,11 +187,13 @@ window.Mdjs = {
 	},
 	
 	/**
-	 * @description 将多个Markdown语句解析成可显示的HTML
+	 * description 将多个Markdown语句解析成可显示的HTML
+	 * 
 	 * @param {Array} mds 多行Markdown语句组成的数组
-	 * @return {String} HTML
+	 * @param {Boolean} inBq (可选,默认false)解析的是否为Blockquote内的内容
+	 * @return {string} HTML
 	 */
-	'handlerLines' : function(mds){
+	'handlerLines' : function(mds,inBq){
 		var res = '';
 		var nowInCode = 0;//目前处理的这行是不是代码,大于等于1就是
 		var lineTrim = '';//当前行去掉两端空白字符后的字符串
@@ -262,15 +264,17 @@ window.Mdjs = {
 				
 				//是区块引用>
 				if(lineTrim[0]=='>' && lineTrim.length>1){
-					res+=this.tag.tBlock[0]+
-						this.handlerInline(lineTrim,1)+'<br />\n';
+					var bq = [];//存放需要区块引用的行
+					bq.push(lineTrim.slice(1));
 					for(var k=i+1;k<mds.length;k++){
 						tmpStr = mds[k].trim();
-						if(tmpStr.length==0)break;
+						if(tmpStr.length==0)break;//不是区块引用的内容了
 						if(tmpStr[0]=='>')tmpStr=tmpStr.slice(1);
-						res+=this.handlerInline(tmpStr,0)+'<br />\n';
+						else if(inBq)break;//如果是区块引用嵌入区块引用,并且没有>符号就返回上一层区块引用
+						//如果不按上面那行做,会导致区块引用嵌套时结尾一定会有一行无法去掉的空白
+						bq.push(tmpStr);
 					}
-					res+=this.tag.tBlock[1];
+					res+=this.tag.tBlock[0]+this.handlerLines(bq,true)+this.tag.tBlock[1];
 					i = k - 1;
 					continue;
 				}
