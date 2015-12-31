@@ -1,6 +1,6 @@
 /**
  * @name MdJs
- * @version 0.31 Dev 2015/12/28
+ * @version 0.32 Dev 2016/01/01
  * @author Liuyue(Hangxingliu)
  * @description Mdjs是一个轻量级的Js的Markdown文件解析器
  */
@@ -57,6 +57,27 @@ window.Mdjs = {
 				return true;
 		return false;
 	},
+	
+	/**
+	 * @description 判断一个字符串是否有指定前缀
+	 * @param {String} str 字符串
+	 * @param {String} pf 前缀
+	 */
+	'_startWith' : function(str,pf){
+		if(str.length<pf.length)return false;
+		return str.slice(0,pf.length)==pf;
+	},
+	
+	/**
+	 * @description 判断一个字符串是否有指定后缀
+	 * @param {String} str 字符串
+	 * @param {String} sf 后缀
+	 */
+	'_endWith'	 : function(str,sf){
+		if(str.length<sf.length)return false;
+		return str.slice(-sf.length)==sf;
+	},
+	
 	/**
 	 * @description 判断一句语句是否为一条水平分割线,即三个及以上的=_-
 	 * @param {String} str Markdown语句
@@ -97,6 +118,15 @@ window.Mdjs = {
 			else break;
 		}
 		return lineLeft;
+	},
+	'_genSpace':function(len){
+		if(!this.gss){
+			this.gss=' ';
+			for(var i=0;i<10;i++)//1024长度的空白字符串
+				this.gss+=this.gss;
+		}
+		if(len<=0)return '';
+		return this.gss.slice(0,len);
 	},
 	
 	/**
@@ -207,6 +237,8 @@ window.Mdjs = {
 		var tocLevel = [];//记录目录每个节点的层次
 		var tocLen = 0;//记录目录一共有多少个节点
 		
+		var lastEmptyL = -2;//上一个空白行是第几行,为了防止重复多行换行
+		
 		var tmpStr = '';
 		for(var i=0;i<mds.length;i++){
 			lineTrim = mds[i].trim();
@@ -235,7 +267,10 @@ window.Mdjs = {
 			
 			//空白行
 			if(lineTrim.length==0){
-				res+='<br />\n';continue;
+				if(lastEmptyL!=i-1)//上一行没有输出过换行
+					res+='<br />\n';
+				lastEmptyL = i;
+				continue;
 			}
 
 			//没有Tab键在行前
@@ -308,13 +343,17 @@ window.Mdjs = {
 				//代码块(需要检查上一行),普通文本
 				//代码块
 				if(i==0 || mds[i-1].trim().length == 0){
-					res += this.tag.tCode[0].replace('$lang','') + this._htmlSafer(mds[i]);
-					for(var j=i+1;j<mds.length;j++){
-						if(this._leftSpace(mds[j])<4)break;
-						res += '\n'+ this._htmlSafer(mds[j]);
+					res += this.tag.tCode[0].replace('$lang','');
+					var space = '',endL = i;//space是为了中间的空白行,endl是为了保存代码最后有效行在哪
+					for(var j=i,ltab;j<mds.length;j++){
+						if(mds[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
+						if((ltab = this._leftSpace(mds[j]))<4)break;//空白小于一个Tab键了,退出代码块
+						res += space + (j==i?'':'\n') + this._genSpace(ltab-2) +//去掉开头多余的空白字符
+							this._htmlSafer(mds[j].trim());
+						space='',endL = j;//重置空白行和记录最后有效行
 					}
 					res += this.tag.tCode[1];
-					i=j-1;
+					i=endL;
 					continue;
 				}
 			}
@@ -336,7 +375,12 @@ window.Mdjs = {
 			}
 			
 			//这下真的是普通的一行了
-			res += this.tag.tP[0] + this.handlerInline(lineTrim,0) + this.tag.tP[1];
+			tmpStr = this.handlerInline(lineTrim,0).trim();
+			var kw = this.inlineTag.tImg;//kw是Img标签的数组
+			//判断当行是否只有一个图片标签,如果是,优化输出,不带<p></p>
+			if(this._startWith(tmpStr,kw[0]) && this._endWith(tmpStr,kw[2])
+				&& tmpStr.indexOf(kw[0],1)==-1)res+=tmpStr;
+			else res += this.tag.tP[0] + tmpStr + this.tag.tP[1];
 			//循环,一行结束
 		}
 		//如果需要输出目录
@@ -536,15 +580,16 @@ window.Mdjs = {
 				break;
 			case '*':
 			case '_'://粗体斜体
-				if(t[i+1]==t[i]){//粗体
+				if(aOrImgStart)//如果是图片/链接的URL中有*_符号
+					res+=t[i];
+				else if(t[i+1]==t[i]){//粗体
 					if(strongStart==0)lastStrongMark = t[i];
 					else if(t[i]!=lastStrongMark){//表示正常的两个字符
 						if(isAImgTitle)aImgTitle+=t[i]+t[i];
 						else res+=t[i]+t[i];
 						i++;break;
 					}
-					if(aOrImgStart)res+=t[i]+t[i+1];//如果是图片/链接的URL中有*_符号
-					else res+=this.inlineTag.tStrong[strongStart];
+					res+=this.inlineTag.tStrong[strongStart];
 					strongStart=1^strongStart;
 					i++;
 				}else{//斜体
@@ -554,8 +599,7 @@ window.Mdjs = {
 						else res+=t[i];
 						break;
 					}
-					if(aOrImgStart)res+=t[i];//如果是图片/链接的URL中有*_符号
-					else res+=this.inlineTag.tEm[emStart];
+					res+=this.inlineTag.tEm[emStart];
 					emStart=1^emStart;
 				}
 				break;
