@@ -1,0 +1,149 @@
+/*
+ * 一套用于显示Mdjs解析生成的HTML的Css样式表
+ * 2016/01/11
+ */
+
+.md{
+	font-size: 1em;
+	line-height: 1.5;
+}
+
+/*
+ * 目录
+ */
+.md_toc{
+	background-color: #fafafa;
+	border: thin solid #ccc;
+	display: inline-block;
+	padding: 0 1em 0 0;
+	margin: 1em 0 .5em 0;
+}
+
+/*
+ * 脚注内容 
+ */
+.md_foot{
+	margin-top: 2em;
+	border-top: thin solid #bbb;
+	padding: 1em;
+	background-color: #F6F6F6;
+}
+
+/*
+ * 表格对齐:
+ */
+.md_table_left{text-align: left;}
+.md_table_mid{text-align: center;}
+.md_table_right{text-align: right;}
+.md_table{
+	width: 96%;
+	border-spacing: 0;
+    border-collapse: collapse;
+    margin: .3em 1%;
+}
+.md_table th,
+.md_table td{
+	padding: 8px;
+	line-height: 1.4;
+	vertical-align: top;
+	border: thin solid #888;
+}
+
+/*
+ * 段落,段首空两格
+ */
+.md p{
+	text-indent: 2em;
+	margin: 0;
+}
+
+/*
+ * 标题
+ */
+.md h1{
+	padding: .2em 1em;
+	border-bottom: thin solid #eee;
+}
+.md h2{
+	padding: .2em 1em;
+	border-bottom: 2px solid #f4f4f4;
+}
+.md h3{
+	margin-left: 1em;
+	margin-right: 1em;
+	padding: .2em 1em;
+	border-bottom: 2px solid #f8f8f8;
+}
+
+/*
+ * 链接
+ */
+.md a{
+	color: #555;
+}
+.md a:hover{
+	text-decoration: none;
+}
+.md sup a{
+	text-decoration: none;
+}
+
+/*
+ * 行内代码
+ */
+.md p code,
+.md li code{
+	background-color: #F8F8F8;
+	border: 1px solid #DDD;
+	margin: 0 .2em;
+	padding: .2em .5em;
+	font-family: monospace;
+}
+.md pre{
+	border: thin solid #EEE;
+	border: thin solid rgba(0,0,0,.1);
+	background-color: #f5f2f0;
+	padding: 1em;
+}
+.md pre code{
+    overflow: auto;
+    font-family: monospace;
+}
+
+/*
+ * 图片
+ */
+.md img{
+	width: 85%;
+	margin: .2em 0 .5em 6%;
+}
+/*
+ * 文本内嵌图片
+ */
+.md p img{
+	padding: 0;
+	border: none;
+	width: auto;
+	margin: 0 .2em;
+}
+
+/*
+ * 区块引用
+ */
+.md blockquote{
+	padding: .5em .2em .5em .5em;
+	margin-left: 0;
+	background-color: #f8f8f8;
+	background-color: rgba(200,200,200,0.15);
+	border-left: 5px solid #ccc;
+}
+.md blockquote blockquote{
+	margin-left: 2em;
+}
+
+/*
+ * 列表
+ */
+.md li{
+	margin: .3em 0;
+}

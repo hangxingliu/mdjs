@@ -1,6 +1,6 @@
 /**
  * @name MdJs
- * @version 0.32 Dev 2016/01/01
+ * @version 0.4 Dev 2016/01/10
  * @author Liuyue(Hangxingliu)
  * @description Mdjs是一个轻量级的Js的Markdown文件解析器
  */
@@ -12,6 +12,8 @@ window.Mdjs = {
 		'ul' : /^[\*\-\+] +\S*/g,
 		'ol' : /^\d+\. +\S*/g,
 		'delHTML' : /<\/?[^<>]+>/g,
+		'url' : /^\w+:\/{2,3}\S+$/g,
+		'email' : /^[\w-]+@[\w-]+\.[\w\.-]+$/g
 	},
 	/**
 	 * @description 表格列的对齐样式class="md_table_xxx"
@@ -23,10 +25,12 @@ window.Mdjs = {
 	'tag' : {
 		'tBlock': ['<blockquote><p>','</p></blockquote>\n'],
 		'tCode'	: ['<pre><code data-lang="$lang">','</code></pre>\n'],//lang会被替换被具体语言,若没设置具体语言则为空白字符串
-		'tList'	: ['<li>','<ol>','<ul>','</li>'],
+		'tList'	: ['<li>','<ol>','<ul>','</li>\n','</ol>\n','</ul>\n'],
 		'tP'	: ['<p>','</p>'],
 		'tToc'	: ['<div class="md_toc">\n','<ol>\n',
 			'<a href="#$href"><li>','</li></a>','</ol>','</div>\n'],
+		'tFoot' : ['<div class="md_foot">\n<ol>\n',
+			'<li name="%s" id="%s" >','</li>','</ol></div>\n'],
 		'tA'	: ['<a href="mailto:','<a href="','">','</a>'],
 		'tTable': ['<table class="md_table">\n<thead>\n','</thead>\n<tbody>\n','</tbody>\n</table>\n','<tr>','</tr>\n',//0,1,2,3,4
 			'<th class="$align">','</th>','<td class="$align">','</td>','md_table_'],//5,6,7,8,9
@@ -38,8 +42,18 @@ window.Mdjs = {
 		'tStrong' : ['<strong>','</strong>'],
 		'tEm' : ['<em>','</em>'],
 		'tCode' : ['<code>','</code>'],
-		'tA' : ['<a href="','">','</a>'],
-		'tImg' : ['<img src="','" title="','" />'],
+		'tSupStr' : '<sup><a title="%s" href="%s">%s</a></sup>',
+		'tAStr' : '<a title="%s" href="%s">%s</a>',
+		'tImgStr' : '<img alt="%s" title="%s" src="%s" />',
+	},
+	/**
+	 * @description 初始化行内样式标签数组,在每次调用md2html都会被调用
+	 */
+	'initILT' : function(){
+		var ilt = Mdjs.inlineTag;
+		ilt.tSup = ilt.tSupStr.split('%s');
+		ilt.tA = ilt.tAStr.split('%s');
+		ilt.tImg = ilt.tImgStr.split('%s');
 	},
 	/**
 	 * @description 可以用斜杠转义的字符(0.3加入|转义)
@@ -50,12 +64,13 @@ window.Mdjs = {
 	 * @description 判断一个元素是否在数组中
 	 * @param {Object} e 元素
 	 * @param {Object} arr 数组
+	 * @return {1|0}
 	 */
 	'_inArray' : function(e,arr){
 		for(var i=0;i<arr.length;i++)
 			if(e==arr[i])
-				return true;
-		return false;
+				return 1;
+		return 0;
 	},
 	
 	/**
@@ -119,6 +134,10 @@ window.Mdjs = {
 		}
 		return lineLeft;
 	},
+	/**
+	 * @description 生成指定长度的空格内容字符串
+	 * @param {Number} len 指定长度,最长1024
+	 */
 	'_genSpace':function(len){
 		if(!this.gss){
 			this.gss=' ';
@@ -141,28 +160,51 @@ window.Mdjs = {
 	},
 	
 	/**
-	 * @description 判断一个语句start点后面有没有完整的]()的链接或图片的语句结构
-	 * @param {String} str Markdown语句
-	 * @param {Number} start 某一个起点,一般为[所在位置
-	 * @return {Boolean} 是否还有完整的结构
+	 * @description 从一个链接内容中提取出链接地址,链接标题
+	 * @param {String} hrefInfo 链接内容,例如: http://xxx.xx "Title"
+	 * @return {Object} 包含url属性和title属性的对象
 	 */
-	'_isExpressAOrImg':function(str,start){
-		while(true){
-			var i = str.indexOf('](',start);
-			if(i==-1)return false;
-			//判断找到的](中的]不是被转义的字符
-			if(str[i-1]=='\\' && str[i-2]!='\\'){start=i+2;continue;}//FIXME 多重转义字符
-		while(true){
-			i = str.indexOf(')',i+1);
-			if(i==-1)return false;
-			//判断找到的)不是被转义的字符
-			if(str[i-1]=='\\' && str[i-2]!='\\')continue;//FIXME 多重转义字符
-			return true;
+	'_matchHref':function(hrefInfo){
+		var ret = {};
+		//hadURL表示是否已经解析出一个链接地址了
+		for(var i=0,hadURL = 0;i<hrefInfo.length;i++){
+			if(!hadURL){
+				if(hrefInfo[i]==' ' || hrefInfo[i]=='\t')
+					ret.url = hrefInfo.slice(0,i),hadURL=1;
+			}else if(hrefInfo[i]=='\'' || hrefInfo[i]=='"' || hrefInfo[i]=='('){
+				ret.title = hrefInfo.slice(i+1,-1);break;
+			}
 		}
-		}
+		if(!ret.url)ret.url=hrefInfo;
+		if(!ret.title)ret.title='';
+		return ret;
 	},
 	
-	/*__________栈结构(其实我现在才知道javascript数组可以push和pop的@Version 0.2 Dev Marked)______>>>>>*/
+	/**
+	 * @description 判断一个Markdown语句中是否为参考式定义语句,如果是则保存参考式内容到参考式数组
+	 * @param {String} t Markdown语句
+	 * @return {0|1} 此语句是否为参考式的定义语句,0:false,1:true
+	 */
+	'_matchRefer':function(t){
+		t=t.trim();
+		var i,k,v;
+		if(t[0]!='[')return 0;//必须以[打头
+		if((i=t.indexOf(']:',1))==-1)return 0;//必须有[xxx]:的结构
+		if(t[i+2]!=' '&&t[i+2]!='\t')return 0;//必须在上述结构后有至少一个空白字符
+		k=t.slice(1,i);//提取参考式名字
+		if(k[0]=='^'){//脚注
+			v = {id:this.sup_record(k),
+				 title:k.slice(1),
+				 content:t.slice(i+3)};
+			v.url = '#md_f_'+v.id;
+		}else{//链接参考式
+			v=this._matchHref(t.slice(i+3).trim());
+		}
+		this.refer_set(k,v);
+		return 1;
+	},
+	
+	/*__________栈结构______>>>>>*/
 	'_inn' : [],//存放语句前的空白字符数目 {Number}
 	'_inn2': [],//存放列表的类型 {Number}
 	'_innLen' : 0,//栈长度
@@ -197,6 +239,15 @@ window.Mdjs = {
 	},
 	/*<<<<<__________栈结构__________*/
 	
+	/*__________参考式,脚注类>>>>>>>>>*/
+	'refer_init': function(){this.rfMan = {};this.rfSup = [];},
+	//正常content为{url:xxx,title:xxx}
+	//脚注content为{url:xxx,title:xxx,id:xxx}
+	'refer_set': function(name,content){this.rfMan[name.toLowerCase()]=content;},
+	'refer_get': function(name){return this.rfMan[name.toLowerCase()];},
+	'sup_record': function(name){return this.rfSup.push(name);},
+	/*<<<<<<<<<<参考式,脚注类________*/
+	
 	/**
 	 * @description 将一个Markdown文本解析为可显示的HTML
 	 * @param {String} md Markdown文本
@@ -204,16 +255,40 @@ window.Mdjs = {
 	 * @return {String} HTML
 	 */
 	'md2html' : function(md,options){
-		//self = Mdjs;好吧,原谅我对Web的了解不是很深,我在0.3Dev版中才改掉
 		//return Mdjs.handlerLines(md.split(/[\n]/g));//这种方法会导致不同系统的文档显示出现问题
+		try{//FIXME 这个是dev版的错误采集机制
+		
+		//初始化行内标签
+		Mdjs.initILT();
+		
+		//初始化参考式管理器
+		Mdjs.refer_init();
 		var lines = [];
-		for(var i=0,last=0,len=md.length;i<len;i++){
-			if(md[i]=='\r')lines.push(md.slice(last,i)),i+=md[i+1]=='\n'?1:0;
-			else if(md[i]=='\n')lines.push(md.slice(last,i));
-			else continue;
-			last=i+1;
-		}if(last<len)lines.push(md.slice(last));
-		return Mdjs.handlerLines(lines);
+		var line=null;
+		for(var i=0,last=0,len=md.length;i<len;i++,line=null){
+			if(md[i]=='\r')line = md.slice(last,i),i+=md[i+1]=='\n'?1:0;
+			else if(md[i]=='\n')line = md.slice(last,i);
+			//判断一下是否为参考式
+			if(line!=null){
+				if(!Mdjs._matchRefer(line))lines.push(line);
+				last=i+1;
+			}
+		}
+		if(last<len){
+			line = md.slice(last);
+			if(!Mdjs._matchRefer(line))
+				lines.push(line);
+		}
+		return Mdjs.handlerLines(lines)+Mdjs.handlerFoot();//内容最后如果有脚注就输出脚注内容
+		
+		}catch(e){
+			Toast.err(
+				'Mdjs运行时错误:<br/><strong>'+e+'</strong><br />欢迎来此报告错误:<br />(下面两个链接任意一个均可)<br />'
+				+'<a target="_blank" href="http://git.oschina.net/voyageliu/mdjs/issues">Git@OSC</a>'
+				+'<br />'
+				+'<a target="_blank" href="http://git.oschina.net/voyageliu/mdjs/issues">Github</a>'
+				);
+		}
 	},
 	
 	/**
@@ -272,7 +347,7 @@ window.Mdjs = {
 				lastEmptyL = i;
 				continue;
 			}
-
+			
 			//没有Tab键在行前
 			if(lineLeft < 4){
 				if(lineTrim.slice(0,3)=='```'){//进入代码块
@@ -287,8 +362,11 @@ window.Mdjs = {
 						break;
 				//是标题
 				if(j!=0){
-					var cutEnd = lineTrim.indexOf('#',j);
-					var titleText = cutEnd==-1?lineTrim.slice(j):lineTrim.slice(j,cutEnd);
+					var cutEnd = lineTrim.length-1;//标题内容的结尾位置
+					for(;cutEnd>j;cutEnd--)
+						if(lineTrim[cutEnd]!='#')//为了去掉结尾的#号
+							break;
+					var titleText = lineTrim.slice(j,cutEnd+1);
 					//tocMark给当前标题标记的ID和name,为了能让TOC目录点击跳转
 					var tocMark = titleText = this.handlerInline(titleText,0);
 					tocLevel[tocLen]  = j;
@@ -376,10 +454,9 @@ window.Mdjs = {
 			
 			//这下真的是普通的一行了
 			tmpStr = this.handlerInline(lineTrim,0).trim();
-			var kw = this.inlineTag.tImg;//kw是Img标签的数组
 			//判断当行是否只有一个图片标签,如果是,优化输出,不带<p></p>
-			if(this._startWith(tmpStr,kw[0]) && this._endWith(tmpStr,kw[2])
-				&& tmpStr.indexOf(kw[0],1)==-1)res+=tmpStr;
+			if(this._startWith(tmpStr,'<img ') && this._endWith(tmpStr,'/>')
+				&& tmpStr.indexOf('<img ',1)==-1)res+=tmpStr;
 			else res += this.tag.tP[0] + tmpStr + this.tag.tP[1];
 			//循环,一行结束
 		}
@@ -393,9 +470,24 @@ window.Mdjs = {
 	},
 	
 	/**
+	 * 生成一个脚注内容的代码
+	 * @return {String} 脚注内容的HTML
+	 */
+	'handlerFoot' : function(){
+		if(this.rfSup.length==0)return '';
+		var tF = this.tag.tFoot;
+		var res = tF[0];
+		for(var i=0;i<this.rfSup.length;i++){
+			var item = this.refer_get(this.rfSup[i]);
+			res+=tF[1].replace(/%s/g,item.url.slice(1))+this.handlerInline(item.content,0)+tF[2];
+		}
+		return res+tF[3];
+	},
+	
+	/**
 	 * 生成一个TOC目录的代码
-	 * @param {String} tocTitle 目录节点的标题
-	 * @param {String} tocLevel 目录节点的层次
+	 * @param {Array} tocTitle 目录节点的标题
+	 * @param {Array} tocLevel 目录节点的层次
 	 * @param {Number} tocLen 目录节点集合的长度
 	 * @return {String} TOC目录的HTML代码
 	 */
@@ -426,9 +518,9 @@ window.Mdjs = {
 		var res = '';
 		while(this._iTop()!=-1){
 			if(this._iTop2()==1)//数字列表
-				res+='</ol>\n';
+				res+=this.tag.tList[4];
 			else//无序列表
-				res+='</ul>\n';
+				res+=this.tag.tList[5];
 			this._iPop();
 		}
 		return res;
@@ -453,9 +545,9 @@ window.Mdjs = {
 		}else{//上一个列表的___父列表___的___兄弟列表___
 			while(level<topLevel){//找到属于这个列表的兄弟列表
 				if(this._iTop2()==1)//数字列表
-					res+='</ol>\n';
+					res+=this.tag.tList[4];
 				else//无序列表
-					res+='</ul>\n';
+					res+=this.tag.tList[5];
 				this._iPop();
 				topLevel = this._iTop();
 			}
@@ -541,155 +633,218 @@ window.Mdjs = {
 	},
 	/**
 	 * @description 处理一行Markdown语句(已经去掉了头部的修饰的语句,例如去掉了标题#符号,引用>符号等等...)
-	 * @param {String} text 去掉了头部的Markdown语句
-	 * @param {Number} start 这个Markdown语句的起始点
+	 * @param {String} t 去掉了头部的Markdown语句
+	 * @param {Number} start 这个Markdown语句的起始点,默认为0
 	 */
-	'handlerInline' : function(text,start){
-		var	t = text+'\\';//在最后加上一个字符,防止越界
-		var len = t.length - 1;
-		var res = '';//结果
+	'handlerInline' : function(t,start){
+		/*
+		 * 结果=结果集合并
+		 * 利用结果集可以方便的在子结果尾部插入<strong><em><del>标签
+		 */
 		
-		//1:表示一个样式已经开始,如果再到这个样式则结束样式
-		var strongStart = 0;
-		var emStart = 0;
-		var codeStart = 0;
-		//表示粗体或斜体的样式开始的时候用的符号:*或_
-		var lastStrongMark = '*';
-		var lastEmMark = '*';
-		//表示前面有"[","]"可以匹配"(",")"
-		var aOrImgStart = false;
+		var len = t.length;//text的长度
+		var rList = [];//返回结果集
+		var r = '';//返回结果中最新的一条子结果
 		
-		var aOrImg = 'a';//[]()表示链接还是图片
-		var isAImgTitle = false;//读取的时候读到的是链接或图片的标题吗?
-		var aImgTitle = '';//链接或图片的标题
-		var tmpChar = '';
-		var tmpInt = 0;
-		var tmpBool = true;
+		//上一次转义了的字符所在结果集中的哪一行(或者说当时结果集有多少行了),和那行的偏移量
+		var lastMean = -1,lastMeanOffset = -1;
 		
-		for(var i=(start<0?0:start);i<len;i++){
+		//上一次出现<strong><i><del>分别是在哪个结果集的末尾
+		var lastStrong = -1;
+		var lastEm = -1;
+		var lastDel = -1;
+		//上一次出现<strong><i>的类型是*还是_
+		var lastStType = '*';
+		var lastEmType = '*';
+		
+		var nextLoc;//下一次的位置
+		var linkType;//可链接元素的类型:'s':Sup;'i':Image;'':Link
+		var linkTitle,linkContent,linkURL,linkMore;//linkContent : linkURL "linkMore"
+		
+		var tS,tI,tO,tB;//临时变量
+		
+		var ilt = this.inlineTag;//InlineTag的缩写变量
+		
+		//遍历语句
+		for(var i=(!start?0:start);i<len;i++){
+			
 			switch(t[i]){
-			case '\\'://转义字符
-				if(this._inArray(t[i+1],this._meaning))tmpChar=t[++i];
-				else tmpChar=t[i];
-				if(isAImgTitle)aImgTitle+=tmpChar;
-				else res+=tmpChar;
+			case '\\'://转义字符\打头
+				//如果\后面的字符是可转义字符才转义
+				if(this._inArray(t[i+1],this._meaning))
+					lastMean=rList.length,lastMeanOffset=++i;//++i为了移动到下一位
+				r+=t[i];
 				break;
 			case '`'://行内代码
-				res+=this.inlineTag.tCode[codeStart];
-				codeStart=1^codeStart;
+				tS=(t[i+1]=='`')?'``':'`';tI=tS.length;//tS记录行内代码包裹的标记,tI记录前者长度
+				if((nextLoc = t.indexOf(tS,i+tI))==-1)r+=tS;//如果往后找找不到可匹配的结束行内代码的标记,就正常输出
+				else{//找到了,输出行内代码
+					r+=ilt.tCode[0]+this._htmlSafer(t.slice(i+tI,nextLoc))+ilt.tCode[1];
+					i=nextLoc;
+				}
+				i+=tI-1;//移动遍历光标
+				break;
+			case '~'://删除线
+				if(t[i+1]=='~'){//两个~才表示删除线
+					if(lastDel>=0){//前面出现过一次~~了,这个是收尾
+						if(r==''){//表示新的子结果集才开始,~~包裹的内容为空,~~~~的情况,保留前面的两个~~
+							rList[lastDel]+='~~';
+						}else{//正常情况,输出删除线的文本
+							rList[lastDel]+='<del>';r+='</del>';lastDel = -1;
+						}
+					}else{//这是第一次出现~~标记,是个打头,记录一下并开启一个新的子结果集
+						lastDel = rList.push(r) - 1;r = '';
+					}
+					i++;
+				}else r+='~';//只是一个普通的波浪线
 				break;
 			case '*':
 			case '_'://粗体斜体
-				if(aOrImgStart)//如果是图片/链接的URL中有*_符号
-					res+=t[i];
-				else if(t[i+1]==t[i]){//粗体
-					if(strongStart==0)lastStrongMark = t[i];
-					else if(t[i]!=lastStrongMark){//表示正常的两个字符
-						if(isAImgTitle)aImgTitle+=t[i]+t[i];
-						else res+=t[i]+t[i];
-						i++;break;
+				//Markdown规范,*或_两边空格,则当作正常字符输出
+				if((t[i+1]==' ' || t[i+1]=='\t') && (t[i-1]==' ' || t[i-1]=='\t')){
+					r+=t[i];break;
+				}
+				//两个*或_在一起,表示粗体
+				if(t[i+1]==t[i]){
+					if(lastStrong>=0){//这个是收尾
+						if(lastStType != t[i]){//上次开头的标记字符与本次的不一样,当作正常字符输出
+							r+=t[i++]+t[i];break;	
+						}
+						//一切正常输出加粗内容
+						rList[lastStrong]+=ilt.tStrong[0];
+						r+=ilt.tStrong[1];lastStrong = -1;
+					}else{//这是开头
+						if(t[i+2]==t[i] && t[i+3]==t[i]){//四个连续的*或_,那就不解析前面两个,否则无法出现只想单纯表达四个*的效果
+							r+=t[i++]+t[i++];
+						}
+						lastStrong = rList.push(r) - 1;
+						r = '';lastStType = t[i];
 					}
-					res+=this.inlineTag.tStrong[strongStart];
-					strongStart=1^strongStart;
 					i++;
 				}else{//斜体
-					if(emStart==0)lastEmMark = t[i];
-					else if(t[i]!=lastEmMark){//表示正常的两个字符
-						if(isAImgTitle)aImgTitle+=t[i];
-						else res+=t[i];
+					if(lastEm>=0){//这个是收尾
+						if(lastEmType != t[i]){//上次开头的字符与本次的不一样,当作正常字符输出
+							r+=t[i];break;	
+						}
+						//一切正常输出斜体内容
+						rList[lastEm]+=ilt.tEm[0];
+						r+=ilt.tEm[1];lastEm = -1;
+					}else{//这是开头
+						lastEm = rList.push(r) - 1;
+						r = '';lastEmType = t[i];
+					}
+				}
+				break;
+			case '>'://有可能是HTML注释结尾
+				if(i>=2 && t.slice(i-2,i)=='--')r+='-->';//HTML注释结尾
+				else r+='>';//否则当成>字符输出
+				break;
+			case '<'://可能是自动链接或自动邮箱或者是HTML标签或者干脆就是一个<字符
+				if(t.slice(i+1,i+4)=='!--'){r+='<!--';break;}//考虑一种特殊情况,HTML注释
+				
+				tB = 1;//表示有可能是邮箱或URL
+				for(nextLoc=i+1;nextLoc<len;nextLoc++){//找到>在哪里
+					if(t[nextLoc]=='>')break;
+					if(t[nextLoc]==' '||t[nextLoc]=='\t')tB=0;//出现空白字符了,不可能是邮箱或URL了
+				}
+				if(nextLoc >= len){r+='&lt;';break;}//都找不到>,那就转义输出吧
+				
+				tS = t.slice(i+1,nextLoc);//选出<>内的内容
+				if(tB){//如果还有可能是url或email
+					if(this.regs.url.test(tS)){//内容是URL
+						r+=this.tag.tA[1]+tS+this.tag.tA[2]+tS+this.tag.tA[3];
+						i = nextLoc;break;
+					}
+					if(this.regs.email.test(tS)){//内容是邮箱
+						r+=this.tag.tA[0]+tS+this.tag.tA[2]+tS+this.tag.tA[3];
+						i = nextLoc;break;
+					}
+				}
+				r+='<'//当作正常字符输出;
+				break;
+			case '!'://如果不是初判图片才输出
+				if(t[i+1]!='[')r+='!';break;
+			case '['://进入了可链接(Linkable)元素区块
+				//判断类型
+				if(t[i-1]=='!' && (lastMean!=rList.length || lastMeanOffset!=i-1))linkType='i';//图片
+				else if(t[i+1]=='^')linkType='s';//脚注型
+				else linkType='';//链接
+				var hadEmbedImg = 0;//是否在遍历的时候发现了内嵌图片的开始标记
+				//循环为了读取到完整的可链接元素信息
+				//done用于判断是否获得完整信息后才结束(即是否成功输出了可链接元素)
+				for(var j=i+1,done=0;j<len;j++){switch(t[j]){
+					//如果是图片模式内部就不能有![,如果是链接模式内部就不能有[
+					case '!':
+						if(t[j+1]!='[')break;//仅仅是感叹号
+						if(linkType!='')j=len;//图片模式和脚注模式跳过
+						else hadEmbedImg=1,j++;//标记内嵌图片,跳过[
 						break;
+					case '`'://跳过代码块
+						tS=(t[j+1]=='`')?'``':'`';tI=tS.length;
+						if((nextLoc = t.indexOf(tS,j+tI)) == -1)j+=tI-1;
+						else j=nextLoc+tI-1;
+						break;
+					case '[':j=len;break;//可链接元素内不允许再嵌套一次链接
+					case ']'://找到可链接元素的标题/文本部分结束符了
+						//先保存标题部分
+						linkTitle = t.slice(i+1,j);
+						if(linkType=='s'){//如果是脚注,那就直接输出了
+							tO = this.refer_get(linkTitle);
+							if(tO)//该脚注信息是否存在
+								r+=ilt.tSup[0]+ tO.title +ilt.tSup[1]+ tO.url +ilt.tSup[2]+ tO.id +ilt.tSup[3]
+									,done=1,i=j,j=len;
+							break;
+						}
+						tS=t[j+1];
+						var toFind;//可链接元素的结尾符号
+						if(tS=='(')toFind=')';
+						else if(tS=='[' || (tS==' '&&t[j+2]=='['))toFind=']';
+						else {j=len;break;}//发现无法匹配格式](或] [,不是可链接元素
+						tI = tS==' '?j+3:j+2;//查找开始点,截取点
+						if((nextLoc = t.indexOf(toFind,tI)) != -1){//正常收尾
+							//如果之前有内嵌图片的标记头就跳过这个收尾
+							if(hadEmbedImg){hadEmbedImg=0;break;}
+							linkContent = t.slice(tI,nextLoc).trim();//保存链接内容:链接及链接标题部分
+							if(toFind==']'){//参考式,则解析成真实链接内容
+								if(linkContent.length==0)linkContent=linkTitle;//如果留空,则表示参考式名称就是标题文本
+								tO =  this.refer_get(linkContent);
+								if(!tO){j=len;break;}//该参考式不存在
+							}else{//行内式解析
+								tO = this._matchHref(linkContent);
+							}
+							linkURL = tO.url;linkMore = tO.title;
+							if(linkType=='i')//输出图片
+								r+=ilt.tImg[0]+this._htmlSafer(linkTitle)+ilt.tImg[1]
+									+this._htmlSafer(linkMore)+ilt.tImg[2]+ encodeURI(linkURL)+ilt.tImg[3];
+							else//输出链接
+								r+=ilt.tA[0]+this._htmlSafer(linkMore)+ilt.tA[1]
+									+encodeURI(linkURL)+ilt.tA[2]+this.handlerInline(linkTitle,0)+ilt.tA[3];
+							done=1;i=nextLoc;
+						}
+						j=len;
+						break;
+				}}
+				if(!done && j>=len){//没有有效的尾部,当正常字符串输出
+					switch(linkType){
+					case 's':r+='[^';i++;break;
+					case 'i':r+='![';break;
+					default :r+='[';
 					}
-					res+=this.inlineTag.tEm[emStart];
-					emStart=1^emStart;
 				}
 				break;
-			case '!'://图片
-				if(isAImgTitle){//这个叹号出现在 图片或链接的标题(中括号)内
-					if(t[i+1]!='['){aImgTitle+='!';break;}//只是想表达一个叹号
-					//链接标题要显示图片,即链接内嵌图片
-					var valid=false;//用于验证图片个结构是否合法,true:表示已经有](结构了,
-					for(var j=i+2;j<len;j++){//为了找到内嵌图片的结尾)
-						if(t[j]=='\\')j++;//转义字符
-						else if(t[j]==']'){
-							if(t[j+1]=='(')valid=true,j++;//当作内嵌图片结构合法
-							else{j=len;break;}//不是内嵌图片
-						}else if(t[j]==')' && valid)break;//结构结尾
-					}
-					//输出图片HTML,其实这步就是递归handlerInLine处理一个图片结构标记
-					if(j<len)aImgTitle+=this.handlerInline(t.slice(i,j+1),0),i=j;
-					else aImgTitle+='!';
-				}else if(t[i+1]=='[')aOrImg = 'i';//图片(非链接内嵌图片)标记开始了
-				else res+='!';
-				break;
-			case '['://要读取标题了
-				tmpBool = this._isExpressAOrImg(t,i);
-				//if(tmpBool)console.log(aImgTitle);
-				if(!tmpBool || aOrImgStart){//如果这个[后面的结构_不_完整或者已经开始了一个[]()结构
-					tmpChar = '[';
-					if(t[i-1]=='!'){//误判了上一个叹号为图片修饰符,恢复
-						tmpChar='![';aOrImg='';
-					}
-					if(isAImgTitle)aImgTitle+=tmpChar;//只是想表达一个中括号
-					else res+=tmpChar;
-				}else{aOrImgStart = true;isAImgTitle = true;aImgTitle = '';}
-				break;
-			case ']'://标题读取完成
-				if(aOrImgStart)isAImgTitle = false;
-				else{
-					if(isAImgTitle)aImgTitle+=']';//只是想表达一个中括号
-					else res+=']';
-				}
-				break;
-			case '('://读取链接部分,这时候要把链接或图片的前缀输出了
-				if(!aOrImgStart){res+='(';break;}//只是想表达一个括号
-				else if(isAImgTitle){aImgTitle+='(';break;}//在标题里表达一个括号
-				if(aOrImg=='i')res+=this.inlineTag.tImg[0];
-				else res+=this.inlineTag.tA[0];
-				break;
-			case ')'://读取链接部分完成
-				if(!aOrImgStart){res+=')';break;}//只是想表达一个括号
-				else if(isAImgTitle){aImgTitle+=')';break;}//在标题里表达一个括号
-				if(aOrImg=='i')res+=this.inlineTag.tImg[1];
-				else res+=this.inlineTag.tA[1];
-				//输出标题(图片展位字符串)
-				if(aOrImg=='i'){//图片
-					res+=this._htmlSafer(aImgTitle)+this.inlineTag.tImg[2];
-				}else{//链接
-					res+=aImgTitle+this.inlineTag.tA[2];
-				}
-				aOrImg = '';//恢复图片或链接
-				aOrImgStart = false;
-				break;
-			case '<'://可能是自动链接或自动邮箱
-				if(!isAImgTitle){//不是标题才有可能
-				tmpInt = t.indexOf('>',i);
-				if(tmpInt!=-1){
-					tmpChar = t.slice(i+1,tmpInt);
-					if(tmpChar.search(/$\/?[\w ]*^/g)==-1){//第一次筛选,筛掉全部是字母或空格的HTML标签
-					if(tmpChar.search(/^\w+:\/\/\S*/g)==0){//第二次选出URL
-						res+=this.tag.tA[1]+tmpChar+this.tag.tA[2]+tmpChar+this.tag.tA[3];
-						i = tmpInt;break;
-					}if(tmpChar.search(/^\S+@\S+\.\w+$/g)==0){//第二次选出邮箱
-						res+=this.tag.tA[0]+tmpChar+this.tag.tA[2]+tmpChar+this.tag.tA[3];
-						i = tmpInt;break;
-					}
-					}
-				}else{//干脆连>收尾都找不到了,那就转义一下<并输出
-					if(isAImgTitle)aImgTitle+=t[i];
-					else res+= '&lt;';
-					break;
-				}
-				}
 			default://基本字符
-				if(isAImgTitle)aImgTitle+=t[i];
-				else res+=t[i];
+				r+=t[i];
 			}
 		}
-		//如果此句结束了粗体,斜体,行内代码还没有正常结束的话就自动补充
-		if(codeStart==1)res+=this.inlineTag.tCode[1];
-		if(emStart==1)res+=this.inlineTag.tEm[1];
-		if(strongStart==1)res+=this.inlineTag.tStrong[1];
-		return res;
+		//将最后一个子句推入
+		rList.push(r);
+		
+		//如果此语句解析完后发现之前有些~_*不是表示粗体斜体或删除线的就正常输出
+		if(lastDel!=-1)rList[lastDel]+='~~';
+		if(lastStrong!=-1)rList[lastStrong]+=lastStType+lastStType;
+		if(lastEm!=-1)rList[lastEm]+=lastEmType;
+		
+		return rList.join('');
 	},
 	
 };

@@ -3,9 +3,9 @@
 > Mdjs是一个易用的轻量级的Js的Markdown文件解析器
 
 ---
-`2016年01月01日`
+`2016年01月10日`
 
-Version `0.32 Dev`
+Version `0.4 Dev`
 
 欢迎大家参考学习,也望大家能够对本解析器中的不足或错误进行指正批评.
 
@@ -24,7 +24,11 @@ Mdjs遵循[Apache Licence 2.0](LICENSE)
 ## 使用方法
 
 ``` html
+	<!-- 不依赖其他任何库,仅一个脚本文件即可 -->
 	<script src="mdjs.min.js" type="text/javascript" charset="utf-8"></script>
+	
+	<!-- 注意:如果需要对解析出的HTML附带上更多的样式,可以参考或引用mdcss.css样式表文件(下面一句) -->
+	<link rel="stylesheet" type="text/css" href="mdcss.css"/>
 ```
 
 ``` javascript
@@ -33,22 +37,22 @@ Mdjs遵循[Apache Licence 2.0](LICENSE)
 
 ## 语法支持
 
-目前用的广泛使用的Markdown语法都能被正常解析,一些使用广度不大的语法也会在稍后的版本中一一更新.
-详细支持情况可以参考[开发手册](http://git.oschina.net/voyageliu/mdjs/wikis/Developer)
+目前用的广泛使用的Markdown语法都能被正常解析
 
 > **注意**:流程图,时序图,LaTeX公式的解析将不会在我的Mdjs主线中版本中出现,
 因为这个解析器追求的是简洁与轻量
+**当然,你也可以通过使用其他库对解析结果内的各类图表公式进行解析显示**
 
 ## 演示文件
 
-- `demo.html` : 简单的Markdown显示样例
-- `demoEditor.html` : 简单的Markdown实时预览编辑器样例
+- `demo/demo.html` : 简单的Markdown显示样例
+- `demo/demoEditor.html` : 简单的Markdown实时预览编辑器样例
 
 ---
 - `Example.md` :用来测试解析器的演示Markdown文件
 
 ---
-- `simpleMarkdown.css` :一个简单的用于显示Markdown解析成的HTML的样式表(从`github2.css`修改而来)
+- `mdcss.css` :一个简单的用于显示Markdown解析成的HTML的样式表
 
 ## 注意事项
 
@@ -59,17 +63,3 @@ Mdjs遵循[Apache Licence 2.0](LICENSE)
 ## 开发手册
 
 [开发手册](http://git.oschina.net/voyageliu/mdjs/wikis/Developer)
-
-## 界面截图
-
-![截图1](/img/readme1.png)
-
-![截图2](/img/readme2.png)
-
-![截图3](/img/readme3.png)
-
-![截图4](/img/readme4.png)
-
-![截图5](/img/readme5.png)
-
-![截图6](/img/readme6.png)

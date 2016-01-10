@@ -1,6 +1,6 @@
 {
   "name": "mdjs",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Js的Markdown解析器",
   "main": "",
   "dependencies": {},
@@ -11,6 +11,6 @@
   "scripts": {
     "test": "gulp"
   },
-  "author": "hangxingliu",
+  "author": "liuyue",
   "license": "Apache License Version 2.0"
 }

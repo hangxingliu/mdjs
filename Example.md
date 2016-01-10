@@ -9,8 +9,17 @@
 行内是不是应该要有`代码`呀.来个__`加粗代码`__.为什么还要有[链接](http://www.baidu.com)呢
 再来一发--->自动链接:<http://www.baidu.com>
 自动邮箱:<ooo@xxx.com>
-上图片:![微博](http://www.sinaimg.cn/blog/developer/wiki/LOGO_16x16.png)
-链接配图片:[![微博](http://www.sinaimg.cn/blog/developer/wiki/LOGO_16x16.png)](http://www.sinaimg.cn/blog/developer/wiki/LOGO_16x16.png)
+上图片:![Github](https://assets-cdn.github.com/favicon.ico "Github Icon")
+链接配图片:[![Github](https://assets-cdn.github.com/favicon.ico)](https://github.com/ "Github")你们居然忘记了我,我是脚注啊[^脚注1].所以说还要看看[参考式链接][r]和自动[ReferAuto][]
+
+[r]: http://www.baidu.com
+[ReferAuto]: http://www.baidu.com "自动参考的参考式"
+
+[^脚注1]: 我是一个示例脚注
+
+来一张大图:
+
+![](https://ss1.bdstatic.com/kvoZeXSm1A5BphGlnYG/skin_zoom/147.jpg)
 
 ## 分割线
 
@@ -64,6 +73,4 @@
 \-\-\-
 ....More
 
-<div style="text-align:right;color:green">
-    我是HTML标签显示的哦!
-</div>
+<div style="text-align:right;color:green">我是HTML标签显示的哦!</div>
