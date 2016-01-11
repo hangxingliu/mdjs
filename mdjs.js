@@ -33,7 +33,7 @@ window.Mdjs = {
 			'<li name="%s" id="%s" >','</li>','</ol></div>\n'],
 		'tA'	: ['<a href="mailto:','<a href="','">','</a>'],
 		'tTable': ['<table class="md_table">\n<thead>\n','</thead>\n<tbody>\n','</tbody>\n</table>\n','<tr>','</tr>\n',//0,1,2,3,4
-			'<th class="$align">','</th>','<td class="$align">','</td>','md_table_'],//5,6,7,8,9
+			'<th class="$align">','</th>','<td class="$align">','</td>','md_table_']//5,6,7,8,9
 	},
 	/**
 	 * @description 行内样式的HTML标签
@@ -44,7 +44,7 @@ window.Mdjs = {
 		'tCode' : ['<code>','</code>'],
 		'tSupStr' : '<sup><a title="%s" href="%s">%s</a></sup>',
 		'tAStr' : '<a title="%s" href="%s">%s</a>',
-		'tImgStr' : '<img alt="%s" title="%s" src="%s" />',
+		'tImgStr' : '<img alt="%s" title="%s" src="%s" />'
 	},
 	/**
 	 * @description 初始化行内样式标签数组,在每次调用md2html都会被调用
@@ -845,6 +845,6 @@ window.Mdjs = {
 		if(lastEm!=-1)rList[lastEm]+=lastEmType;
 		
 		return rList.join('');
-	},
+	}
 	
 };
