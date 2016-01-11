@@ -1,9 +1,15 @@
 # Mdjs
 
 > Mdjs是一个易用的轻量级的Js的Markdown文件解析器
+> **演示效果**可以查看,基于Mdjs写的在线Markdown编辑器`Mdjs.editor`
+> Mdjs.editor项目地址:&nbsp;&nbsp;[GitOsc][mdjseditorOSC]&nbsp;&nbsp; [Github][mdjseditorGithub]
+> **Mdjs.editor项目演示**: [效果演示][mdjseditordemo]
 
+[mdjseditorOSC]: http://git.oschina.net/voyageliu/mdjs.editor
+[mdjseditorGithub]: https://github.com/hangxingliu/mdjs.editor
+[mdjseditordemo]: http://hangxingliu.github.io/mdjs.editor/
 ---
-`2016年01月10日`
+`2016年01月12日`
 
 Version `0.4 Dev`
 
@@ -46,8 +52,8 @@ Mdjs遵循[Apache Licence 2.0](LICENSE)
 ## 演示文件
 
 - `demo/demo.html` : 简单的Markdown显示样例
-- `demo/demoEditor.html` : 简单的Markdown实时预览编辑器样例
-
+- ~~`demo/demoEditor.html` : 简单的Markdown实时预览编辑器样例~~
+	- **已废弃**:编辑器实现可以参考`Mdjs.editor`项目,项目地址见当前文档头部
 ---
 - `Example.md` :用来测试解析器的演示Markdown文件
 
@@ -56,9 +62,8 @@ Mdjs遵循[Apache Licence 2.0](LICENSE)
 
 ## 注意事项
 
-1. 本解析器对解析出来的HTML不带任何CSS样式,不带代码高亮功能,这些可以又开发者自由搭配选择
-2. 本解析器不会对代码块进行高亮处理,但是开发者可以轻松地为解析出来的`<code></code>`绑上高亮组件以达到高亮显示的目的
-3. 这个解析器没有自带的Markdown编辑器功能,所以如果你要使用本解析器制作一个前端Markdown编辑器,则你需要编写一个前端界面
+1. 本解析器不会对代码块进行高亮处理,但是开发者可以轻松地为解析出来的`<code></code>`绑上高亮组件以达到高亮显示的目的
+2. 这个解析器没有自带的Markdown编辑器功能,可以参考`Mdjs.editor`(项目地址见当前文档头部)(一款基于Mdjs的在线Markdown编辑器)的实现
 
 ## 开发手册
 
