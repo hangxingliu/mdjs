@@ -1,8 +1,8 @@
 # Mdjs
 
-> Mdjs是一个易用的轻量级的Js的Markdown文件解析器
-> **演示效果**可以查看,基于Mdjs写的在线Markdown编辑器`Mdjs.editor`
-> Mdjs.editor项目地址:&nbsp;&nbsp;[GitOsc][mdjseditorOSC]&nbsp;&nbsp; [Github][mdjseditorGithub]
+> Mdjs是一个易用的轻量级的Js的Markdown文件解析器  
+> **演示效果**可以查看,基于Mdjs写的在线Markdown编辑器`Mdjs.editor`  
+> Mdjs.editor项目地址:&nbsp;&nbsp;[GitOsc][mdjseditorOSC]&nbsp;&nbsp; [Github][mdjseditorGithub]  
 > **Mdjs.editor项目演示**: [效果演示][mdjseditordemo]
 
 [mdjseditorOSC]: http://git.oschina.net/voyageliu/mdjs.editor
@@ -54,6 +54,7 @@ Mdjs遵循[Apache Licence 2.0](LICENSE)
 - `demo/demo.html` : 简单的Markdown显示样例
 - ~~`demo/demoEditor.html` : 简单的Markdown实时预览编辑器样例~~
 	- **已废弃**:编辑器实现可以参考`Mdjs.editor`项目,项目地址见当前文档头部
+
 ---
 - `Example.md` :用来测试解析器的演示Markdown文件
 
