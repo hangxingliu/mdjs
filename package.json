@@ -1,16 +1,17 @@
 {
-  "name": "mdjs",
+  "name": "md-js",
   "version": "0.4.0",
   "description": "Js的Markdown解析器",
-  "main": "",
+  "main": "mdjs.js",
   "dependencies": {},
   "devDependencies": {
     "gulp-rename": "^1.2.2",
     "gulp-uglify": "^1.5.1"
   },
   "scripts": {
+    "build": "gulp",
     "test": "gulp"
   },
-  "author": "liuyue",
+  "author": "LiuYue",
   "license": "Apache License Version 2.0"
 }
