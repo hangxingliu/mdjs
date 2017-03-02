@@ -61,19 +61,6 @@ window.Mdjs = {
 	'_meaning' : "#`*[]()-_{}+.!|\\",
 	
 	/**
-	 * @description 判断一个元素是否在数组中
-	 * @param {Object} e 元素
-	 * @param {Object} arr 数组
-	 * @return {1|0}
-	 */
-	'_inArray' : function(e,arr){
-		for(var i=0;i<arr.length;i++)
-			if(e==arr[i])
-				return 1;
-		return 0;
-	},
-	
-	/**
 	 * @description 判断一个字符串是否有指定前缀
 	 * @param {String} str 字符串
 	 * @param {String} pf 前缀
@@ -671,7 +658,7 @@ window.Mdjs = {
 			switch(t[i]){
 			case '\\'://转义字符\打头
 				//如果\后面的字符是可转义字符才转义
-				if(this._inArray(t[i+1],this._meaning))
+				if(this._meaning.indexOf(t[i+1]) >= 0)	
 					lastMean=rList.length,lastMeanOffset=++i;//++i为了移动到下一位
 				r+=t[i];
 				break;
