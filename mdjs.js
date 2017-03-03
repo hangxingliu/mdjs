@@ -133,7 +133,7 @@
 				refSupManager = new ClassMdjsReferManager();
 				//初始化列表元素栈
 				listItemStack = new ClassMdjsListItemStack();
-				
+
 				//原始行
 				var rawLines = md.replace(regex.replaceCRLF, '\n').split(regex.splitLine);
 				//去掉了参考式的行
@@ -275,7 +275,7 @@
 						resultMarkdown += tag.tCode[1];
 						continue;
 					}
-					resultMarkdown += (isThisLineInCodeBlock ? '' : '\n') + escapedHTML(lines[i]);
+					resultMarkdown += (isThisLineInCodeBlock ? '\n' : '') + escapedHTML(lines[i]);
 					continue;
 				}
 				
