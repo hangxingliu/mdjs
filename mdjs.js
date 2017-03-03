@@ -32,7 +32,7 @@
 	/**
 	 * @description 参考式 脚注 管理类
 	 */
-	function ClassMdjsReferManager() {
+	function ClassMdjsReferManager(footNoteNameGenerator) {
 		var referMap = {},//参考式 脚注 Map映射
 			superscriptList = [];//脚注 数组列表
 		//参考式content为{url:xxx,title:xxx}
@@ -41,6 +41,7 @@
 			//如果式脚注就分配ID
 			if (isSup)
 				content.id = superscriptList.push(content);
+			content.url = footNoteNameGenerator(content.id);
 			referMap[name.toLowerCase()] = content;
 		};
 		this.get = function (name) {
@@ -113,8 +114,10 @@
 				'<th class="$align">', '</th>', '<td class="$align">', '</td>', 'md_table_']//5,6,7,8,9
 		};
 
+		var footNoteNameGenerator = function (id) { return 'markdown_foot_' + id };
+		
 		//参考式 脚标 管理器
-		var refSupManager = new ClassMdjsReferManager();
+		var refSupManager = new ClassMdjsReferManager(footNoteNameGenerator);
 		var listItemStack = new ClassMdjsListItemStack();
 
 		/**
@@ -130,7 +133,7 @@
 			
 			try {
 				//初始化参考式管理器
-				refSupManager = new ClassMdjsReferManager();
+				refSupManager = new ClassMdjsReferManager(footNoteNameGenerator);
 				//初始化列表元素栈
 				listItemStack = new ClassMdjsListItemStack();
 
@@ -146,7 +149,6 @@
 					var object, isSup = false;
 					if (isSup = (part[1] == '^')) { //如果是脚注
 						object = { title: part[2], content: part[3] }
-						// v.url = '#md_f_'+v.id;
 					}else{ //参考式
 						object = analyzeTitleableLink(part[3].trim());
 					}
@@ -773,7 +775,7 @@
 							if(linkType=='s'){//如果是脚注,那就直接输出了
 								tO = refSupManager.get(linkTitle);
 								if(tO)//该脚注信息是否存在
-									r+=ilt.tSup[0]+ tO.title +ilt.tSup[1]+ tO.url +ilt.tSup[2]+ tO.id +ilt.tSup[3]
+									r+=ilt.tSup[0]+ tO.title +ilt.tSup[1]+ '#' +tO.url +ilt.tSup[2]+ tO.id +ilt.tSup[3]
 										,done=1,i=j,j=len;
 								break;
 							}
@@ -789,7 +791,7 @@
 								linkContent = t.slice(tI,nextLoc).trim();//保存链接内容:链接及链接标题部分
 								if(toFind==']'){//参考式,则解析成真实链接内容
 									if(linkContent.length==0)linkContent=linkTitle;//如果留空,则表示参考式名称就是标题文本
-									tO =  refSupManager.get(linkContent);
+									tO = refSupManager.get(linkContent);
 									if(!tO){j=len;break;}//该参考式不存在
 								}else{//行内式解析
 									tO = analyzeTitleableLink(linkContent);
@@ -840,7 +842,7 @@
 			var tF = tag.tFoot;
 			var res = tF[0];
 			list.forEach(function (item) {
-				res += tF[1].replace(/%s/g, '#markdown_foot_' + item.id) + handlerInline(item.content, 0) + tF[2];
+				res += tF[1].replace(/%s/g, item.url) + handlerInline(item.content, 0) + tF[2];
 			});
 			return res+tF[3];
 		}

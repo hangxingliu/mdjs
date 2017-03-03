@@ -4,8 +4,9 @@
 
 - [x] 支持行尾空格换行模式(至少两个空格)
 - [x] 代码无法正常换行的问题
-- [ ] 脚标链接到 undefined 的 bug
+- [x] 脚标链接到 undefined 的 bug
 - [ ] 脚标多行无效的Bug
+- [ ] 修改脚注的拼写为footnote
 - [ ] 添加自定义渲染器的支持
 
 ## How to use
