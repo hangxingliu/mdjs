@@ -135,7 +135,7 @@
 		/**
 		 * @description 将一个 Markdown 文本解析为可显示的HTML
 		 * @param {String} md Markdown文本
-		 * @param {Object} options 解析选项
+		 * @param {MdjsParseOptions|Object} options 解析选项
 		 * @return {String} HTML
 		 */
 		this.md2html = function (md, options) {
@@ -161,7 +161,7 @@
 					refSupManager.set(part[1] + part[2], object, isSup);
 				});
 				
-				return handlerLines(lines) + handlerFoot(); //内容最后如果有脚注就输出脚注内容
+				return handlerLines(lines, false, options) + handlerFoot(); //内容最后如果有脚注就输出脚注内容
 			} catch (e) {
 				console.error(e.stack);
 			}
@@ -236,10 +236,12 @@
 		 * 
 		 * @param {Array<String>} mds 多行Markdown语句组成的数组
 		 * @param {Boolean} inBq (可选,默认false)解析的是否为Blockquote内的内容
+		 * @param {MdjsParseOptions|Object} options 解析选项
 		 * @return {string} HTML
 		 */
-		function handlerLines(mds,inBq){
-			var res = '';
+		function handlerLines(mds,inBq, options){
+			var resultMarkdown = '';
+
 			var isThisLineInCodeBlock = 0;//目前处理的这行是不是代码,大于等于1就是
 			var trimedLine = '';//当前行去掉两端空白字符后的字符串
 			var leftWhiteLength = 0;//当前行左端的空格字符数量,//1个Tab=4个空格
@@ -263,10 +265,10 @@
 				if(isThisLineInCodeBlock){
 					if(trimedLine=='```'){//代码结束了
 						isThisLineInCodeBlock = false;
-						res += tag.tCode[1];
+						resultMarkdown += tag.tCode[1];
 						continue;
 					}
-					res += (isThisLineInCodeBlock ? '' : '\n') + escapedHTML(mds[i]);
+					resultMarkdown += (isThisLineInCodeBlock ? '' : '\n') + escapedHTML(mds[i]);
 					continue;
 				}
 				
@@ -276,15 +278,15 @@
 				//列表行
 				var l = isThisAListItemAndGetListType(trimedLine);
 				if(l!=0){
-					res += handlerList(leftWhiteLength,l,trimedLine);
+					resultMarkdown += handlerList(leftWhiteLength,l,trimedLine);
 					continue;
 				}
-				res+= handlerListEnd();
+				resultMarkdown+= handlerListEnd();
 				
 				//空白行
 				if(trimedLine.length==0){
-					if(lastEmptyL!=i-1)//上一行没有输出过换行
-						res+='<br />\n';
+					if (lastEmptyL != i - 1)//上一行没有输出过换行	
+						resultMarkdown+='<br />\n';
 					lastEmptyL = i;
 					continue;
 				}
@@ -292,8 +294,8 @@
 				//没有Tab键在行前
 				if (leftWhiteLength < 4) {
 					if (trimedLine.startsWith('```')) {//进入代码块
-						lang = trimedLine.slice(3).trim();
-						res+=tag.tCode[0].replace('$lang',lang);
+						var lang = trimedLine.slice(3).trim();
+						resultMarkdown+=tag.tCode[0].replace('$lang',lang);
 						isThisLineInCodeBlock = true;
 						continue;
 					}
@@ -313,7 +315,7 @@
 						var tocMark = titleText = handlerInline(titleText,0);
 						tocLevel[tocLen]  = j;
 						tocTitle[tocLen++]= tocMark = tocMark.trim().replace(regex.delHTML,'');
-						res+='<h'+j+' id="'+tocMark+'" name="'+tocMark+'">'+titleText+'</h'+j+'>\n';
+						resultMarkdown+='<h'+j+' id="'+tocMark+'" name="'+tocMark+'">'+titleText+'</h'+j+'>\n';
 						continue;
 					}
 					
@@ -329,30 +331,30 @@
 							//如果不按上面那行做,会导致区块引用嵌套时结尾一定会有一行无法去掉的空白
 							bq.push(tmpStr);
 						}
-						res+=tag.tBlock[0]+ handlerLines(bq,true)+tag.tBlock[1];
+						resultMarkdown+=tag.tBlock[0]+ handlerLines(bq,true)+tag.tBlock[1];
 						i = k - 1;
 						continue;
 					}
 					//横线
-					if (isCutLine(trimedLine)) { res += '<hr />'; continue; }
+					if (isCutLine(trimedLine)) { resultMarkdown += '<hr />'; continue; }
 					
 					
 					//目录
 					//记录当前位置, 在全部文档解析完后输出到这个位置
-					if (trimedLine == '[TOC]') { tocPosition = res.length; continue; }
+					if (trimedLine == '[TOC]') { tocPosition = resultMarkdown.length; continue; }
 					
 					//表格
 					if((tbRet = handlerTbLine(trimedLine)) != false){//可能是表格
 						//两行表格语句确定表格结构
 						if(i<mds.length-1 && (tbFmt = handlerTbFmt(mds[i+1].trim(),tbRet.length) )!=false){
 							//表格头部
-							res+=tag.tTable[0]+tag.tTable[3]+genTbTr(tbRet,tbFmt,true)+tag.tTable[4];
-							res+=tag.tTable[1];//表格主体开始
+							resultMarkdown+=tag.tTable[0]+tag.tTable[3]+genTbTr(tbRet,tbFmt,true)+tag.tTable[4];
+							resultMarkdown+=tag.tTable[1];//表格主体开始
 							for(var j=i+2;j<mds.length;j++){
 								if((tbRet = handlerTbLine(mds[j].trim())) == false)break;//不是表格语句了
-								res+=tag.tTable[3]+genTbTr(tbRet,tbFmt,false)+tag.tTable[4];
+								resultMarkdown+=tag.tTable[3]+genTbTr(tbRet,tbFmt,false)+tag.tTable[4];
 							}
-							i=j-1;res+=tag.tTable[2];
+							i=j-1;resultMarkdown+=tag.tTable[2];
 							continue;
 						}
 					}
@@ -362,16 +364,16 @@
 					//代码块(需要检查上一行),普通文本
 					//代码块
 					if(i==0 || mds[i-1].trim().length == 0){
-						res += tag.tCode[0].replace('$lang','');
+						resultMarkdown += tag.tCode[0].replace('$lang','');
 						var space = '',endL = i;//space是为了中间的空白行,endl是为了保存代码最后有效行在哪
 						for(var j=i,ltab;j<mds.length;j++){
 							if(mds[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
 							if((ltab = howManyWhiteInLeft(mds[j]))<4)break;//空白小于一个Tab键了,退出代码块
-							res += space + (j==i?'':'\n') + getSpaceString(ltab-2) +//去掉开头多余的空白字符
+							resultMarkdown += space + (j==i?'':'\n') + getSpaceString(ltab-2) +//去掉开头多余的空白字符
 								escapedHTML(mds[j].trim());
 							space='',endL = j;//重置空白行和记录最后有效行
 						}
-						res += tag.tCode[1];
+						resultMarkdown += tag.tCode[1];
 						i=endL;
 						continue;
 					}
@@ -388,7 +390,7 @@
 						var tocMark = titleText = handlerInline(trimedLine,0);
 						tocLevel[tocLen]  = level;
 						tocTitle[tocLen++]= tocMark = tocMark.trim().replace(regex.delHTML,'');
-						res+='<h'+level+' id="'+tocMark+'" name="'+tocMark+'">'+titleText+'</h'+level+'>\n';
+						resultMarkdown+='<h'+level+' id="'+tocMark+'" name="'+tocMark+'">'+titleText+'</h'+level+'>\n';
 						i++;//跳过下一行
 						continue;
 					}
@@ -398,18 +400,18 @@
 				tmpStr = handlerInline(trimedLine, 0).trim();
 				//判断当行是否只有一个图片标签,如果是,优化输出,不带<p></p>
 				if(tmpStr.startsWith('<img ') && tmpStr.endsWith('/>')
-					&& tmpStr.indexOf('<img ',1)==-1)res+=tmpStr;
-				else res += tag.tP[0] + tmpStr + tag.tP[1];
+					&& tmpStr.indexOf('<img ', 1) == -1) resultMarkdown += tmpStr;
+				else resultMarkdown += tag.tP[0] + tmpStr + tag.tP[1];
 				//循环,一行结束
 			}
 
 			//如果需要输出TOC目录
 			if (tocPosition != -1)	
-				res = res.slice(0, tocPosition) +
+				resultMarkdown = resultMarkdown.slice(0, tocPosition) +
 					handlerTOC(tocTitle, tocLevel, tocLen) +
-					res.slice(tocPosition);
+					resultMarkdown.slice(tocPosition);
 			
-			return res;
+			return resultMarkdown;
 		}
 		
 		/**
@@ -447,7 +449,7 @@
 		 * @return {Number} 0:不是列表,1:数字列表ol,2:无序列表ul
 		 */
 		function isThisAListItemAndGetListType(str) {
-			if(isCutLine((str)))return 0;//0.2 Dev版添加的补丁,修正Hr与列表的冲突
+			if (isCutLine((str))) return 0;
 			if(str.search(regex.ol)!=-1)return 1;
 			if(str.search(regex.ul)!=-1)return 2;
 			return 0;
