@@ -50,6 +50,27 @@
 			return superscriptList;
 		};
 	}
+
+	/**
+	 * @description 用于处理列表项的 栈类
+	 */	
+	function ClassMdjsListItemStack() {
+		var levelStack = [],
+			typeStack = [],
+			stackLength = 0;
+		this.topLevel = function () { return stackLength ? levelStack[stackLength - 1] : -1; };
+		this.topType = function () { return stackLength ? typeStack[stackLength - 1] : -1;}
+		this.push = function (level, type) {
+			levelStack.push(level);
+			typeStack.push(type);
+			stackLength++;
+		};
+		this.pop = function () {
+			levelStack.pop();
+			typeStack.pop();
+			stackLength = levelStack.length;
+		};
+	}
 	
 	function ClassMdjs() {
 		var thiz = this;
@@ -92,45 +113,9 @@
 				'<th class="$align">', '</th>', '<td class="$align">', '</td>', 'md_table_']//5,6,7,8,9
 		};
 
-		/*__________栈结构______>>>>>*/
-		var _inn = [];//存放语句前的空白字符数目 {Number}
-		var _inn2 = [];//存放列表的类型 {Number}
-		var _innLen = 0;//栈长度
-
 		//参考式 脚标 管理器
 		var refSupManager = new ClassMdjsReferManager();
-
-		/**
-		 * @return {Number} 弹出Top元素的空白字符数目 | -1
-		 */
-		function _iTop(){
-			return _innLen == 0?-1:_inn[_innLen-1];
-		}
-		/**
-		 * @return {Number} 弹出Top元素的列表类型 | -1
-		 */
-		function _iTop2(){
-			return _inn2[_innLen-1];
-		}
-		/**
-		 * @description 压"列表元素"入栈
-		 * @param {Number} v 语句前的空白字符数目
-		 * @param {Number} v2 列表的类型
-		 */
-		function _iPush(v,v2){
-			_inn[_innLen] = v;
-			_inn2[_innLen++] = v2;
-		}
-		/**
-		 * @description 将栈的Top元素弹出
-		 * @return {Boolean} 是否弹出成功
-		 */
-		function _iPop(){
-			if(_innLen == 0)return false;
-			_innLen--;return true;
-		}
-		/*<<<<<__________栈结构__________*/
-
+		var listItemStack = new ClassMdjsListItemStack();
 
 		/**
 		 * @description 将一个 Markdown 文本解析为可显示的HTML
@@ -139,9 +124,16 @@
 		 * @return {String} HTML
 		 */
 		this.md2html = function (md, options) {
+			//处理默认参数
+			options = options || {};
+			md = typeof md == 'string' ? md : String(md);
+			
 			try {
 				//初始化参考式管理器
 				refSupManager = new ClassMdjsReferManager();
+				//初始化列表元素栈
+				listItemStack = new ClassMdjsListItemStack();
+				
 				//原始行
 				var rawLines = md.replace(regex.replaceCRLF, '\n').split(regex.splitLine);
 				//去掉了参考式的行
@@ -232,18 +224,30 @@
 		}
 
 		/**
+		 * @description 一句字符串右侧是否有至少2个空格字符(表示需要换一个新的行)
+		 * @param {String} str 一句字符串
+		 * @returns {Boolean}
+		 */
+		function isThereAtLeast2spaceInRight(str) {
+			return str.endsWith('  ');
+		}
+
+		/**
 		 * @description 将多个 Markdown 语句解析成可显示的HTML
 		 * 
-		 * @param {Array<String>} mds 多行Markdown语句组成的数组
+		 * @param {Array<String>} lines 多行Markdown语句组成的数组
 		 * @param {Boolean} inBq (可选,默认false)解析的是否为Blockquote内的内容
 		 * @param {MdjsParseOptions|Object} options 解析选项
 		 * @return {string} HTML
 		 */
-		function handlerLines(mds,inBq, options){
+		function handlerLines(lines,inBq, options){
 			var resultMarkdown = '';
 
 			var isThisLineInCodeBlock = 0;//目前处理的这行是不是代码,大于等于1就是
-			var trimedLine = '';//当前行去掉两端空白字符后的字符串
+			
+			var currentLine = '';//目前循环正在处理着的行
+			var trimedLine = '';//目前行去掉两端空白字符后的字符串
+			
 			var leftWhiteLength = 0;//当前行左端的空格字符数量,//1个Tab=4个空格
 			
 			var tbRet = [];//存放表格行解析出来的列数组
@@ -254,12 +258,15 @@
 			var tocLevel = [];//记录目录每个节点的层次
 			var tocLen = 0;//记录目录一共有多少个节点
 			
+			var isParagraphFinished = true;//文本段落是否已经结束, 是否已经插入过了</p>
+
 			var lastEmptyL = -2;//上一个空白行是第几行,为了防止重复多行换行
 			
 			var tmpStr = '';
-			for (var i = 0; i < mds.length; i++){
+			for (var i = 0; i < lines.length; i++){
 
-				trimedLine = mds[i].trim();
+				currentLine = lines[i];				
+				trimedLine = currentLine.trim();
 				
 				//目前正在处理代码,或者代码结尾
 				if(isThisLineInCodeBlock){
@@ -268,12 +275,12 @@
 						resultMarkdown += tag.tCode[1];
 						continue;
 					}
-					resultMarkdown += (isThisLineInCodeBlock ? '' : '\n') + escapedHTML(mds[i]);
+					resultMarkdown += (isThisLineInCodeBlock ? '' : '\n') + escapedHTML(lines[i]);
 					continue;
 				}
 				
 				//计算行前空格数
-				leftWhiteLength = howManyWhiteInLeft(mds[i]);
+				leftWhiteLength = howManyWhiteInLeft(currentLine);
 				
 				//列表行
 				var l = isThisAListItemAndGetListType(trimedLine);
@@ -284,10 +291,12 @@
 				resultMarkdown+= handlerListEnd();
 				
 				//空白行
-				if(trimedLine.length==0){
-					if (lastEmptyL != i - 1)//上一行没有输出过换行	
-						resultMarkdown+='<br />\n';
-					lastEmptyL = i;
+				if (trimedLine.length == 0) {
+					//如果段落还没有结束了, 就结束当前段落然后输出</p>
+					if (!isParagraphFinished) {
+						resultMarkdown += tag.tP[1];
+						isParagraphFinished = true;
+					}
 					continue;
 				}
 				
@@ -323,15 +332,15 @@
 					if(trimedLine[0]=='>' && trimedLine.length>1){
 						var bq = [];//存放需要区块引用的行
 						bq.push(trimedLine.slice(1));
-						for(var k=i+1;k<mds.length;k++){
-							tmpStr = mds[k].trim();
+						for(var k=i+1;k<lines.length;k++){
+							tmpStr = lines[k].trim();
 							if(tmpStr.length==0)break;//不是区块引用的内容了
 							if(tmpStr[0]=='>')tmpStr=tmpStr.slice(1);
 							else if(inBq)break;//如果是区块引用嵌入区块引用,并且没有>符号就返回上一层区块引用
 							//如果不按上面那行做,会导致区块引用嵌套时结尾一定会有一行无法去掉的空白
 							bq.push(tmpStr);
 						}
-						resultMarkdown+=tag.tBlock[0]+ handlerLines(bq,true)+tag.tBlock[1];
+						resultMarkdown += tag.tBlock[0] + handlerLines(bq, true, options) + tag.tBlock[1];
 						i = k - 1;
 						continue;
 					}
@@ -346,12 +355,12 @@
 					//表格
 					if((tbRet = handlerTbLine(trimedLine)) != false){//可能是表格
 						//两行表格语句确定表格结构
-						if(i<mds.length-1 && (tbFmt = handlerTbFmt(mds[i+1].trim(),tbRet.length) )!=false){
+						if(i<lines.length-1 && (tbFmt = handlerTbFmt(lines[i+1].trim(),tbRet.length) )!=false){
 							//表格头部
 							resultMarkdown+=tag.tTable[0]+tag.tTable[3]+genTbTr(tbRet,tbFmt,true)+tag.tTable[4];
 							resultMarkdown+=tag.tTable[1];//表格主体开始
-							for(var j=i+2;j<mds.length;j++){
-								if((tbRet = handlerTbLine(mds[j].trim())) == false)break;//不是表格语句了
+							for(var j=i+2;j<lines.length;j++){
+								if((tbRet = handlerTbLine(lines[j].trim())) == false)break;//不是表格语句了
 								resultMarkdown+=tag.tTable[3]+genTbTr(tbRet,tbFmt,false)+tag.tTable[4];
 							}
 							i=j-1;resultMarkdown+=tag.tTable[2];
@@ -363,14 +372,14 @@
 					//虽然空格数大于了4,但是还是有可能:
 					//代码块(需要检查上一行),普通文本
 					//代码块
-					if(i==0 || mds[i-1].trim().length == 0){
+					if(i==0 || lines[i-1].trim().length == 0){
 						resultMarkdown += tag.tCode[0].replace('$lang','');
 						var space = '',endL = i;//space是为了中间的空白行,endl是为了保存代码最后有效行在哪
-						for(var j=i,ltab;j<mds.length;j++){
-							if(mds[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
-							if((ltab = howManyWhiteInLeft(mds[j]))<4)break;//空白小于一个Tab键了,退出代码块
+						for(var j=i,ltab;j<lines.length;j++){
+							if(lines[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
+							if((ltab = howManyWhiteInLeft(lines[j]))<4)break;//空白小于一个Tab键了,退出代码块
 							resultMarkdown += space + (j==i?'':'\n') + getSpaceString(ltab-2) +//去掉开头多余的空白字符
-								escapedHTML(mds[j].trim());
+								escapedHTML(lines[j].trim());
 							space='',endL = j;//重置空白行和记录最后有效行
 						}
 						resultMarkdown += tag.tCode[1];
@@ -381,8 +390,8 @@
 				
 				//普通文本正常的一行
 				//真的是上面注释的那样吗?其实如果它的下一行是---或===的话,那这一行就是标题行了
-				if (i + 1 < mds.length) {
-					var nextLine = mds[i+1].trim();
+				if (i + 1 < lines.length) {
+					var nextLine = lines[i+1].trim();
 					if (isCutLine(nextLine)) {//真的也,这行是标题
 						var level = 3;//默认三级
 						if (nextLine[0] == '=') level = 1;
@@ -398,11 +407,26 @@
 				
 				//这下真的是普通的一行了
 				tmpStr = handlerInline(trimedLine, 0).trim();
-				//判断当行是否只有一个图片标签,如果是,优化输出,不带<p></p>
-				if(tmpStr.startsWith('<img ') && tmpStr.endsWith('/>')
-					&& tmpStr.indexOf('<img ', 1) == -1) resultMarkdown += tmpStr;
-				else resultMarkdown += tag.tP[0] + tmpStr + tag.tP[1];
-				//循环,一行结束
+
+				//判断当行是否有且只有一个图片标签, 且在段落外. 如果是, 则优化输出. 不将这个图片包裹在一个新的段落(<p></p>)内
+				if (isParagraphFinished &&
+					tmpStr.startsWith('<img ') &&
+					tmpStr.endsWith('/>') &&
+					tmpStr.indexOf('<img ', 1) == -1) {
+					resultMarkdown += tmpStr;
+				} else {
+					//新的段落开始<p>
+					if (isParagraphFinished)
+						tmpStr = tag.tP[0] + tmpStr;
+					//如果解析选项要求强制换行 或 改行末尾含有至少两个空格要求(换行)
+					if (options.alwaysNewline ||
+						isThereAtLeast2spaceInRight(currentLine))
+						tmpStr += '<br/>';
+					resultMarkdown += tmpStr;
+					isParagraphFinished = false;
+				}
+
+				//循环结束,一行处理完成
 			}
 
 			//如果需要输出TOC目录
@@ -463,25 +487,25 @@
 		 * @return {String} 此句 Markdown 的 HTML
 		 */
 		function handlerList(level, type, str) {
-			var topLevel = _iTop();//上一个列表的层次
+			var topLevel = listItemStack.topLevel();//上一个列表的层次
 			var liHTML = tag.tList[0] + handlerInline(str,str.indexOf(' '),0) + tag.tList[3];
 			var res = '';
 			if(level > topLevel){//上一个列表的___子列表___
-				_iPush(level,type);
+				listItemStack.push(level,type);
 				return tag.tList[type] + liHTML;
 			}else if(level == topLevel){//上一个列表的___兄弟(并列)列表___
 				return liHTML;
 			}else{//上一个列表的___父列表___的___兄弟列表___
 				while(level<topLevel){//找到属于这个列表的兄弟列表
-					if(_iTop2()==1)//数字列表
+					if (listItemStack.topType() == 1)//数字列表	
 						res+=tag.tList[4];
 					else//无序列表
 						res+=tag.tList[5];
-					_iPop();
-					topLevel = _iTop();
+					listItemStack.pop();
+					topLevel = listItemStack.topLevel();
 				}
 				if(topLevel==-1){//这个列表是最顶层的列表,即暂时没有兄弟列表,是一个新的列表集的开始
-					_iPush(level,type);
+					listItemStack.push(level,type);
 					return res + tag.tList[type] + liHTML;
 				}else{
 					return res + liHTML;
@@ -495,12 +519,12 @@
 		 */
 		function handlerListEnd(){
 			var res = '';
-			while(_iTop()!=-1){
-				if(_iTop2()==1)//数字列表
+			while(listItemStack.topLevel()!=-1){
+				if (listItemStack.topType() == 1)//数字列表	
 					res+=tag.tList[4];
 				else//无序列表
 					res+=tag.tList[5];
-				_iPop();
+				listItemStack.pop();
 			}
 			return res;
 		}
