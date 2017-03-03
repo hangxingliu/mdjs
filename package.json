@@ -4,7 +4,10 @@
   "description": "A markdown parser",
   "main": "mdjs.js",
   "dependencies": {},
-  "devDependencies": {"uglify-js": "*"},
+  "devDependencies": {
+    "uglify-js": "*",
+    "colors": "*"
+  },
   "scripts": {
     "build": "node ./build.js",
     "test": "node ./build.js"
