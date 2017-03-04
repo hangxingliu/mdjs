@@ -21,7 +21,8 @@
 		url : /^\w+:\/{2,3}\S+$/g,
 		email: /^[\w-]+@[\w-]+\.[\w\.-]+$/g,
 		replaceCRLF: /\r\n/g, 
-		splitLine: /[\r\n]/
+		splitLine: /[\r\n]/,
+		footRefDefine: /^\[([\^]?)(.+)\]\:\s+(.+)$/
 	};
 
 	/**
@@ -138,22 +139,36 @@
 				listItemStack = new ClassMdjsListItemStack();
 
 				//原始行
-				var rawLines = md.replace(regex.replaceCRLF, '\n').split(regex.splitLine);
+				var rawLines = md.replace(regex.replaceCRLF, '\n').split(regex.splitLine),
+					rawLinesLength = rawLines.length;
 				//去掉了参考式的行
-				var lines = [];
+				var lines = [], line = '';
 
 				//寻找参考式
-				rawLines.forEach(function (line) {
-					var part = line.trim().match(/^\[([\^]?)(.+)\]\:\s+(.+)$/);
-					if (!part) return lines.push(line);	
-					var object, isSup = false;
-					if (isSup = (part[1] == '^')) { //如果是脚注
-						object = { title: part[2], content: part[3] }
+				for (var i = 0; i < rawLinesLength; i++){
+					line = rawLines[i];
+					var part = line.trim().match(regex.footRefDefine);
+					//不是脚标获得参考式 行
+					if (!part) {
+						lines.push(line);
+						continue;
+					}
+					var object, isFootNote = false, content = '';
+					if (isFootNote = (part[1] == '^')) { //如果是脚注
+						content = part[3];
+						//查找接下来的行是否仍然属于该脚注内容
+						for (var k = i + 1; k < rawLinesLength; k++ , i++) {
+							line = rawLines[k].trim();
+							if (!line) break;//空白行
+							if (line.match(regex.footRefDefine)) break;//下一个脚注或参考式
+							content += '\n' + rawLines[k];
+						}
+						object = { title: part[2], content: content }
 					}else{ //参考式
 						object = analyzeTitleableLink(part[3].trim());
 					}
-					refSupManager.set(part[1] + part[2], object, isSup);
-				});
+					refSupManager.set(part[1] + part[2], object, isFootNote);
+				}
 				
 				return handlerLines(lines, false, options) + handlerFoot(); //内容最后如果有脚注就输出脚注内容
 			} catch (e) {
