@@ -226,6 +226,18 @@
 		}
 
 		/**
+		 * @description 判断这行markdown是否为标题行, 如果是则返回标题的层级数(1-8), 否则返回false
+		 * @param {String} trimedStr 一个已经执行了trim的字符串
+		 * @returns {Boolean|Number}
+		 */		
+		function isThisLineHeaderAndGetLevel(trimedStr) {
+			for (var j = 0; j < trimedStr.length; j++)	
+				if (trimedStr[j] != '#')	
+					break;
+			return j ? j : false;
+		}
+		
+		/**
 		 * @description 一句字符串右侧是否有至少2个空格字符(表示需要换一个新的行)
 		 * @param {String} str 一句字符串
 		 * @returns {Boolean}
@@ -265,6 +277,8 @@
 			var isParagraphFinished = true;//文本段落是否已经结束, 是否已经插入过了</p>
 
 			var tmpStr = '';
+			var tmpHeaderLevel = 0;
+
 			for (var i = 0; i < linesLength; i++){
 
 				currentLine = lines[i];				
@@ -312,21 +326,19 @@
 					}
 					
 					//是标题吗?多少个标题
-					for(var j=0;j<trimedLine.length;j++)
-						if(trimedLine[j]!='#')
-							break;
+					tmpHeaderLevel = isThisLineHeaderAndGetLevel(trimedLine);
 					//是标题
-					if(j!=0){
+					if (tmpHeaderLevel != 0) {
 						var cutEnd = trimedLine.length-1;//标题内容的结尾位置
-						for(;cutEnd>j;cutEnd--)
+						for(;cutEnd>tmpHeaderLevel;cutEnd--)
 							if(trimedLine[cutEnd]!='#')//为了去掉结尾的#号
 								break;
-						var titleText = trimedLine.slice(j,cutEnd+1);
+						var titleText = trimedLine.slice(tmpHeaderLevel,cutEnd+1);
 						//tocMark 给当前标题标记的 ID 和 name,为了能让TOC目录点击跳转
 						var tocMark = titleText = handlerInline(titleText,0);
-						tocLevel[tocLen]  = j;
+						tocLevel[tocLen]  = tmpHeaderLevel;
 						tocTitle[tocLen++]= tocMark = tocMark.trim().replace(regex.delHTML,'');
-						resultMarkdown+='<h'+j+' id="'+tocMark+'" name="'+tocMark+'">'+titleText+'</h'+j+'>\n';
+						resultMarkdown += '<h' + tmpHeaderLevel + ' id="' + tocMark + '" name="' + tocMark + '">' + titleText + '</h' + tmpHeaderLevel + '>\n';
 						continue;
 					}
 					
