@@ -35,21 +35,21 @@
 	 */
 	function ClassMdjsReferManager(footNoteNameGenerator) {
 		var referMap = {},//参考式 脚注 Map映射
-			superscriptList = [];//脚注 数组列表
+			footNoteList = [];//脚注 数组列表
 		//参考式content为{url:xxx,title:xxx}
 		//脚注content为{url:xxx,title:xxx,id:xxx,content:xxx}
-		this.set = function (name, content, isSup) {
+		this.set = function (name, content, isFootNote) {
 			//如果式脚注就分配ID
-			if (isSup)
-				content.id = superscriptList.push(content);
+			if (isFootNote)
+				content.id = footNoteList.push(content);
 			content.url = footNoteNameGenerator(content.id);
 			referMap[name.toLowerCase()] = content;
 		};
 		this.get = function (name) {
 			return referMap[name.toLowerCase()];
 		};
-		this.getSupList = function () {
-			return superscriptList;
+		this.getFootNoteList = function () {
+			return footNoteList;
 		};
 	}
 
@@ -75,7 +75,7 @@
 	}
 	
 	function ClassMdjs() {
-		var thiz = this;
+		// var thiz = this;
 
 		/**
 		 * @description 表格列的对齐样式class="md_table_xxx"
@@ -118,7 +118,7 @@
 		var footNoteNameGenerator = function (id) { return 'markdown_foot_' + id };
 		
 		//参考式 脚标 管理器
-		var refSupManager = new ClassMdjsReferManager(footNoteNameGenerator);
+		var footRefManager = new ClassMdjsReferManager(footNoteNameGenerator);
 		var listItemStack = new ClassMdjsListItemStack();
 
 		/**
@@ -134,7 +134,7 @@
 			
 			try {
 				//初始化参考式管理器
-				refSupManager = new ClassMdjsReferManager(footNoteNameGenerator);
+				footRefManager = new ClassMdjsReferManager(footNoteNameGenerator);
 				//初始化列表元素栈
 				listItemStack = new ClassMdjsListItemStack();
 
@@ -167,7 +167,7 @@
 					}else{ //参考式
 						object = analyzeTitleableLink(part[3].trim());
 					}
-					refSupManager.set(part[1] + part[2], object, isFootNote);
+					footRefManager.set(part[1] + part[2], object, isFootNote);
 				}
 				
 				return handlerLines(lines, false, options) + handlerFoot(); //内容最后如果有脚注就输出脚注内容
@@ -655,18 +655,18 @@
 		 */
 		function handlerInline(line, start) {
 			/*
-			* 结果=结果集合并
-			* 利用结果集可以方便的在子结果尾部插入<strong><em><del>标签
+			结果 = 结果块列表 合并   return rList.join('');
+			之所以使用结果块列表, 是因为可以方便的在 某个结果块的尾部插入<strong><em><del>标签
 			*/
 			
 			var len = line.length;//text的长度
-			var rList = [];//返回结果集
+			var rList = [];//返回结果块列表
 			var r = '';//返回结果中最新的一条子结果
 			
-			//上一次转义了的字符所在结果集中的哪一行(或者说当时结果集有多少行了),和那行的偏移量
+			//上一次转义了的字符所在结果块列表中的哪一行(或者说当时结果块列表有多少行了),和那行的偏移量
 			var lastMean = -1,lastMeanOffset = -1;
 			
-			//上一次出现<strong><i><del>分别是在哪个结果集的末尾
+			//上一次出现<strong><i><del>分别是在哪个结果块列表的末尾
 			var lastStrong = -1;
 			var lastEm = -1;
 			var lastDel = -1;
@@ -678,7 +678,7 @@
 			var linkType;//可链接元素的类型:'s':Sup;'i':Image;'':Link
 			var linkTitle,linkContent,linkURL,linkMore;//linkContent : linkURL "linkMore"
 			
-			var tS,tI,tO,tB;//临时变量
+			var tmpString,tmpNumber,tmpObject,tmpBoolean;//临时变量
 			
 			var ilt = inlineTag;//InlineTag的缩写变量
 			
@@ -694,24 +694,24 @@
 					break;
 						
 				case '`'://行内代码
-					tS = (line[i + 1] == '`') ? '``' : '`'; tI = tS.length;//tS记录行内代码包裹的标记,tI记录前者长度	
-					if((nextLoc = line.indexOf(tS,i+tI))==-1)r+=tS;//如果往后找找不到可匹配的结束行内代码的标记,就正常输出
+					tmpString = (line[i + 1] == '`') ? '``' : '`'; tmpNumber = tmpString.length;//tS记录行内代码包裹的标记,tI记录前者长度	
+					if((nextLoc = line.indexOf(tmpString,i+tmpNumber))==-1)r+=tmpString;//如果往后找找不到可匹配的结束行内代码的标记,就正常输出
 					else{//找到了,输出行内代码
-						r+=ilt.tCode[0]+escapedHTML(line.slice(i+tI,nextLoc))+ilt.tCode[1];
+						r+=ilt.tCode[0]+escapedHTML(line.slice(i+tmpNumber,nextLoc))+ilt.tCode[1];
 						i=nextLoc;
 					}
-					i+=tI-1;//移动遍历光标
+					i+=tmpNumber-1;//移动遍历光标
 					break;
 						
 				case '~'://删除线
 					if(line[i+1]=='~'){//两个~才表示删除线
 						if(lastDel>=0){//前面出现过一次~~了,这个是收尾
-							if(r==''){//表示新的子结果集才开始,~~包裹的内容为空,~~~~的情况,保留前面的两个~~
+							if(r==''){//表示新的子结果块列表才开始,~~包裹的内容为空,~~~~的情况,保留前面的两个~~
 								rList[lastDel]+='~~';
 							}else{//正常情况,输出删除线的文本
 								rList[lastDel]+='<del>';r+='</del>';lastDel = -1;
 							}
-						}else{//这是第一次出现~~标记,是个打头,记录一下并开启一个新的子结果集
+						}else{//这是第一次出现~~标记,是个打头,记录一下并开启一个新的子结果块列表
 							lastDel = rList.push(r) - 1;r = '';
 						}
 						i++;
@@ -761,28 +761,28 @@
 				case '<'://可能是自动链接或自动邮箱或者是HTML标签或者干脆就是一个<字符
 					if(line.slice(i+1,i+4)=='!--'){r+='<!--';break;}//考虑一种特殊情况,HTML注释
 					
-					tB = 1;//表示有可能是邮箱或URL
+					tmpBoolean = 1;//表示有可能是邮箱或URL
 					for(nextLoc=i+1;nextLoc<len;nextLoc++){//找到>在哪里
 						if(line[nextLoc]=='>')break;
-						if(line[nextLoc]==' '||line[nextLoc]=='\t')tB=0;//出现空白字符了,不可能是邮箱或URL了
+						if(line[nextLoc]==' '||line[nextLoc]=='\t')tmpBoolean=0;//出现空白字符了,不可能是邮箱或URL了
 					}
 					if(nextLoc >= len){r+='&lt;';break;}//都找不到>,那就转义输出吧
 					
-					tS = line.slice(i+1,nextLoc);//选出<>内的内容
-					if(tB){//如果还有可能是 url 或 email
-						if(regex.url.test(tS)){//内容是URL
-							r += tag.tA[1] + tS + tag.tA[2] + tS + tag.tA[3];
+					tmpString = line.slice(i+1,nextLoc);//选出<>内的内容
+					if(tmpBoolean){//如果还有可能是 url 或 email
+						if(regex.url.test(tmpString)){//内容是URL
+							r += tag.tA[1] + tmpString + tag.tA[2] + tmpString + tag.tA[3];
 							i = nextLoc;break;
 						}
-						if(regex.email.test(tS)){//内容是邮箱
-							r += tag.tA[0] + tS + tag.tA[2] + tS + tag.tA[3];
+						if(regex.email.test(tmpString)){//内容是邮箱
+							r += tag.tA[0] + tmpString + tag.tA[2] + tmpString + tag.tA[3];
 							i = nextLoc;break;
 						}
 					}
 					r+='<'//当作正常字符输出;
 					break;
 				case '!'://如果不是初判图片才输出
-					if(line[i+1]!='[')r+='!';break;
+					if(line[i+1]!='[') r+='!';break;
 				case '['://进入了可链接(Linkable)元素区块
 					//判断类型
 					if(line[i-1]=='!' && (lastMean!=rList.length || lastMeanOffset!=i-1))linkType='i';//图片
@@ -799,39 +799,39 @@
 							else hadEmbedImg=1,j++;//标记内嵌图片,跳过[
 							break;
 						case '`'://跳过代码块
-							tS=(line[j+1]=='`')?'``':'`';tI=tS.length;
-							if((nextLoc = line.indexOf(tS,j+tI)) == -1)j+=tI-1;
-							else j=nextLoc+tI-1;
+							tmpString=(line[j+1]=='`')?'``':'`';tmpNumber=tmpString.length;
+							if((nextLoc = line.indexOf(tmpString,j+tmpNumber)) == -1)j+=tmpNumber-1;
+							else j=nextLoc+tmpNumber-1;
 							break;
 						case '[':j=len;break;//可链接元素内不允许再嵌套一次链接
 						case ']'://找到可链接元素的标题/文本部分结束符了
 							//先保存标题部分
 							linkTitle = line.slice(i+1,j);
 							if(linkType=='s'){//如果是脚注,那就直接输出了
-								tO = refSupManager.get(linkTitle);
-								if(tO)//该脚注信息是否存在
-									r+=ilt.tSup[0]+ tO.title +ilt.tSup[1]+ '#' +tO.url +ilt.tSup[2]+ tO.id +ilt.tSup[3]
+								tmpObject = footRefManager.get(linkTitle);
+								if(tmpObject)//该脚注信息是否存在
+									r+=ilt.tSup[0]+ tmpObject.title +ilt.tSup[1]+ '#' +tmpObject.url +ilt.tSup[2]+ tmpObject.id +ilt.tSup[3]
 										,done=1,i=j,j=len;
 								break;
 							}
-							tS=line[j+1];
+							tmpString=line[j+1];
 							var toFind;//可链接元素的结尾符号
-							if(tS=='(')toFind=')';
-							else if(tS=='[' || (tS==' '&&line[j+2]=='['))toFind=']';
+							if(tmpString=='(')toFind=')';
+							else if(tmpString=='[' || (tmpString==' '&&line[j+2]=='['))toFind=']';
 							else {j=len;break;}//发现无法匹配格式](或] [,不是可链接元素
-							tI = tS==' '?j+3:j+2;//查找开始点,截取点
-							if((nextLoc = line.indexOf(toFind,tI)) != -1){//正常收尾
+							tmpNumber = tmpString==' '?j+3:j+2;//查找开始点,截取点
+							if((nextLoc = line.indexOf(toFind,tmpNumber)) != -1){//正常收尾
 								//如果之前有内嵌图片的标记头就跳过这个收尾
 								if(hadEmbedImg){hadEmbedImg=0;break;}
-								linkContent = line.slice(tI,nextLoc).trim();//保存链接内容:链接及链接标题部分
+								linkContent = line.slice(tmpNumber,nextLoc).trim();//保存链接内容:链接及链接标题部分
 								if(toFind==']'){//参考式,则解析成真实链接内容
-									if(linkContent.length==0)linkContent=linkTitle;//如果留空,则表示参考式名称就是标题文本
-									tO = refSupManager.get(linkContent);
-									if(!tO){j=len;break;}//该参考式不存在
+									if (linkContent.length == 0) linkContent = linkTitle;//如果留空,则表示参考式名称就是标题文本
+									tmpObject = footRefManager.get(linkContent);
+									if (!tmpObject) { j = len; break; }//该参考式不存在
 								}else{//行内式解析
-									tO = analyzeTitleableLink(linkContent);
+									tmpObject = analyzeTitleableLink(linkContent);
 								}
-								linkURL = tO.url;linkMore = tO.title;
+								linkURL = tmpObject.url;linkMore = tmpObject.title;
 								if(linkType=='i')//输出图片
 									r+=ilt.tImg[0] + escapedHTML(linkTitle)+ilt.tImg[1]
 										+ escapedHTML(linkMore)+ilt.tImg[2]+ encodeURI(linkURL)+ilt.tImg[3];
@@ -872,7 +872,7 @@
 		 * @return {String} 脚注内容的HTML
 		 */
 		function handlerFoot(){
-			var list = refSupManager.getSupList();
+			var list = footRefManager.getFootNoteList();
 			if(list.length==0)return '';
 			var tF = tag.tFoot;
 			var res = tF[0];
