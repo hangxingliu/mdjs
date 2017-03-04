@@ -245,11 +245,13 @@
 		function handlerLines(lines,inBq, options){
 			var resultMarkdown = '';
 
+			var linesLength = lines.length; // markdown行数
+			
 			var isThisLineInCodeBlock = 0;//目前处理的这行是不是代码,大于等于1就是
 			
 			var currentLine = '';//目前循环正在处理着的行
 			var trimedLine = '';//目前行去掉两端空白字符后的字符串
-			
+
 			var leftWhiteLength = 0;//当前行左端的空格字符数量,//1个Tab=4个空格
 			
 			var tbRet = [];//存放表格行解析出来的列数组
@@ -262,10 +264,8 @@
 			
 			var isParagraphFinished = true;//文本段落是否已经结束, 是否已经插入过了</p>
 
-			var lastEmptyL = -2;//上一个空白行是第几行,为了防止重复多行换行
-			
 			var tmpStr = '';
-			for (var i = 0; i < lines.length; i++){
+			for (var i = 0; i < linesLength; i++){
 
 				currentLine = lines[i];				
 				trimedLine = currentLine.trim();
@@ -330,19 +330,19 @@
 						continue;
 					}
 					
-					//是区块引用>
-					if(trimedLine[0]=='>' && trimedLine.length>1){
-						var bq = [];//存放需要区块引用的行
-						bq.push(trimedLine.slice(1));
-						for(var k=i+1;k<lines.length;k++){
+					//是引用区块 >
+					if (trimedLine[0] == '>' && trimedLine.length > 1) {
+						var quoteLines = [];//存放需要区块引用的行
+						for (var k = i; k < linesLength; k++){
 							tmpStr = lines[k].trim();
-							if(tmpStr.length==0)break;//不是区块引用的内容了
-							if(tmpStr[0]=='>')tmpStr=tmpStr.slice(1);
-							else if(inBq)break;//如果是区块引用嵌入区块引用,并且没有>符号就返回上一层区块引用
+							if (tmpStr.length == 0) break;//不是引用区块的内容了
+							if (tmpStr[0] == '>') tmpStr = tmpStr.slice(1);
+							else if (inBq) break;//如果是区块引用嵌入区块引用,并且没有>符号就返回上一层区块引用
 							//如果不按上面那行做,会导致区块引用嵌套时结尾一定会有一行无法去掉的空白
-							bq.push(tmpStr);
+							quoteLines.push(tmpStr + (isThereAtLeast2spaceInRight(lines[k]) ? '  ' : ''));
+							//检查一下每行末尾是否有需要换行的空格留出, 如果有请保留, 防止被合并到一行内
 						}
-						resultMarkdown += tag.tBlock[0] + handlerLines(bq, true, options) + tag.tBlock[1];
+						resultMarkdown += tag.tBlock[0] + handlerLines(quoteLines, true, options) + tag.tBlock[1];
 						i = k - 1;
 						continue;
 					}
@@ -357,11 +357,11 @@
 					//表格
 					if((tbRet = handlerTbLine(trimedLine)) != false){//可能是表格
 						//两行表格语句确定表格结构
-						if(i<lines.length-1 && (tbFmt = handlerTbFmt(lines[i+1].trim(),tbRet.length) )!=false){
+						if(i<linesLength-1 && (tbFmt = handlerTbFmt(lines[i+1].trim(),tbRet.length) )!=false){
 							//表格头部
 							resultMarkdown+=tag.tTable[0]+tag.tTable[3]+genTbTr(tbRet,tbFmt,true)+tag.tTable[4];
 							resultMarkdown+=tag.tTable[1];//表格主体开始
-							for(var j=i+2;j<lines.length;j++){
+							for(var j=i+2;j<linesLength;j++){
 								if((tbRet = handlerTbLine(lines[j].trim())) == false)break;//不是表格语句了
 								resultMarkdown+=tag.tTable[3]+genTbTr(tbRet,tbFmt,false)+tag.tTable[4];
 							}
@@ -377,7 +377,7 @@
 					if(i==0 || lines[i-1].trim().length == 0){
 						resultMarkdown += tag.tCode[0].replace('$lang','');
 						var space = '',endL = i;//space是为了中间的空白行,endl是为了保存代码最后有效行在哪
-						for(var j=i,ltab;j<lines.length;j++){
+						for(var j=i,ltab;j<linesLength;j++){
 							if(lines[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
 							if((ltab = howManyWhiteInLeft(lines[j]))<4)break;//空白小于一个Tab键了,退出代码块
 							resultMarkdown += space + (j==i?'':'\n') + getSpaceString(ltab-2) +//去掉开头多余的空白字符
@@ -392,7 +392,7 @@
 				
 				//普通文本正常的一行
 				//真的是上面注释的那样吗?其实如果它的下一行是---或===的话,那这一行就是标题行了
-				if (i + 1 < lines.length) {
+				if (i + 1 < linesLength) {
 					var nextLine = lines[i+1].trim();
 					if (isCutLine(nextLine)) {//真的也,这行是标题
 						var level = 3;//默认三级
