@@ -276,7 +276,7 @@
 			
 			var isParagraphFinished = true;//文本段落是否已经结束, 是否已经插入过了</p>
 
-			var tmpStr = '';
+			var tmpStr = '', tmpStr2 = '';
 			var tmpHeaderLevel = 0;
 
 			for (var i = 0; i < linesLength; i++){
@@ -347,12 +347,19 @@
 						var quoteLines = [];//存放需要区块引用的行
 						for (var k = i; k < linesLength; k++){
 							tmpStr = lines[k].trim();
-							if (tmpStr.length == 0) break;//不是引用区块的内容了
-							if (tmpStr[0] == '>') tmpStr = tmpStr.slice(1);
-							else if (inBq) break;//如果是区块引用嵌入区块引用,并且没有>符号就返回上一层区块引用
-							//如果不按上面那行做,会导致区块引用嵌套时结尾一定会有一行无法去掉的空白
-							quoteLines.push(tmpStr + (isThereAtLeast2spaceInRight(lines[k]) ? '  ' : ''));
-							//检查一下每行末尾是否有需要换行的空格留出, 如果有请保留, 防止被合并到一行内
+							if (tmpStr.length == 0)
+								break;//不是引用区块的内容了
+							if (tmpStr[0] == '>')
+								tmpStr = tmpStr.slice(1) + (isThereAtLeast2spaceInRight(lines[k]) ? '  ' : '');
+								//检查一下每行末尾是否有需要换行的空格留出, 如果有请保留, 防止被合并到一行内
+							else if (inBq)
+								break;
+								//如果是区块引用嵌入区块引用,并且没有>符号就返回上一层区块引用
+								//如果不按上面那行做,会导致区块引用嵌套时结尾一定会有一行无法去掉的空白
+							else
+								tmpStr = lines[k];
+								//如果没有 > 开头的话就保留原来的字符串(防止丢失行首的空格)
+							quoteLines.push(tmpStr);
 						}
 						resultMarkdown += tag.tBlock[0] + handlerLines(quoteLines, true, options) + tag.tBlock[1];
 						i = k - 1;
@@ -420,13 +427,14 @@
 				}
 				
 				//这下真的是普通的一行了
-				tmpStr = handlerInline(trimedLine, 0).trim();
+				tmpStr = handlerInline(currentLine, 0);
+				tmpStr2 = tmpStr.trim();
 
 				//判断当行是否有且只有一个图片标签, 且在段落外. 如果是, 则优化输出. 不将这个图片包裹在一个新的段落(<p></p>)内
 				if (isParagraphFinished &&
-					tmpStr.startsWith('<img ') &&
-					tmpStr.endsWith('/>') &&
-					tmpStr.indexOf('<img ', 1) == -1) {
+					tmpStr2.startsWith('<img ') &&
+					tmpStr2.endsWith('/>') &&
+					tmpStr2.indexOf('<img ', 1) == -1) {
 					resultMarkdown += tmpStr;
 				} else {
 					//新的段落开始<p>
@@ -627,16 +635,16 @@
 
 		/**
 		 * @description 处理一行Markdown语句(不包括行修饰符, 例如#标题, - 列表...)
-		 * @param {String} t 去掉了头部的Markdown语句
+		 * @param {String} line 去掉了头部的Markdown语句
 		 * @param {Number} start 这个Markdown语句解析的起始点,默认为0
 		 */
-		function handlerInline(t, start) {
+		function handlerInline(line, start) {
 			/*
 			* 结果=结果集合并
 			* 利用结果集可以方便的在子结果尾部插入<strong><em><del>标签
 			*/
 			
-			var len = t.length;//text的长度
+			var len = line.length;//text的长度
 			var rList = [];//返回结果集
 			var r = '';//返回结果中最新的一条子结果
 			
@@ -661,27 +669,27 @@
 			
 			//遍历语句
 			for (var i = (start || 0); i < len; i++){
-				switch(t[i]){
+				switch(line[i]){
 				case '\\'://转义字符\打头
 					//如果\后面的字符是可转义字符才转义
-					if(specialCharacters.indexOf(t[i+1]) >= 0)	
+					if(specialCharacters.indexOf(line[i+1]) >= 0)	
 						lastMean = rList.length,
 							lastMeanOffset = ++i;//++i为了移动到下一位
-					r += t[i];	
+					r += line[i];	
 					break;
 						
 				case '`'://行内代码
-					tS = (t[i + 1] == '`') ? '``' : '`'; tI = tS.length;//tS记录行内代码包裹的标记,tI记录前者长度	
-					if((nextLoc = t.indexOf(tS,i+tI))==-1)r+=tS;//如果往后找找不到可匹配的结束行内代码的标记,就正常输出
+					tS = (line[i + 1] == '`') ? '``' : '`'; tI = tS.length;//tS记录行内代码包裹的标记,tI记录前者长度	
+					if((nextLoc = line.indexOf(tS,i+tI))==-1)r+=tS;//如果往后找找不到可匹配的结束行内代码的标记,就正常输出
 					else{//找到了,输出行内代码
-						r+=ilt.tCode[0]+escapedHTML(t.slice(i+tI,nextLoc))+ilt.tCode[1];
+						r+=ilt.tCode[0]+escapedHTML(line.slice(i+tI,nextLoc))+ilt.tCode[1];
 						i=nextLoc;
 					}
 					i+=tI-1;//移动遍历光标
 					break;
 						
 				case '~'://删除线
-					if(t[i+1]=='~'){//两个~才表示删除线
+					if(line[i+1]=='~'){//两个~才表示删除线
 						if(lastDel>=0){//前面出现过一次~~了,这个是收尾
 							if(r==''){//表示新的子结果集才开始,~~包裹的内容为空,~~~~的情况,保留前面的两个~~
 								rList[lastDel]+='~~';
@@ -697,55 +705,55 @@
 				case '*':
 				case '_'://粗体斜体
 					//Markdown规范,*或_两边空格,则当作正常字符输出
-					if((t[i+1]==' ' || t[i+1]=='\t') && (t[i-1]==' ' || t[i-1]=='\t')){
-						r+=t[i];break;
+					if((line[i+1]==' ' || line[i+1]=='\t') && (line[i-1]==' ' || line[i-1]=='\t')){
+						r+=line[i];break;
 					}
 					//两个*或_在一起,表示粗体
-					if(t[i+1]==t[i]){
+					if(line[i+1]==line[i]){
 						if(lastStrong>=0){//这个是收尾
-							if(lastStType != t[i]){//上次开头的标记字符与本次的不一样,当作正常字符输出
-								r+=t[i++]+t[i];break;	
+							if(lastStType != line[i]){//上次开头的标记字符与本次的不一样,当作正常字符输出
+								r+=line[i++]+line[i];break;	
 							}
 							//一切正常输出加粗内容
 							rList[lastStrong]+=ilt.tStrong[0];
 							r+=ilt.tStrong[1];lastStrong = -1;
 						}else{//这是开头
-							if(t[i+2]==t[i] && t[i+3]==t[i]){//四个连续的*或_,那就不解析前面两个,否则无法出现只想单纯表达四个*的效果
-								r+=t[i++]+t[i++];
+							if(line[i+2]==line[i] && line[i+3]==line[i]){//四个连续的*或_,那就不解析前面两个,否则无法出现只想单纯表达四个*的效果
+								r+=line[i++]+line[i++];
 							}
 							lastStrong = rList.push(r) - 1;
-							r = '';lastStType = t[i];
+							r = '';lastStType = line[i];
 						}
 						i++;
 					}else{//斜体
 						if(lastEm>=0){//这个是收尾
-							if(lastEmType != t[i]){//上次开头的字符与本次的不一样,当作正常字符输出
-								r+=t[i];break;	
+							if(lastEmType != line[i]){//上次开头的字符与本次的不一样,当作正常字符输出
+								r+=line[i];break;	
 							}
 							//一切正常输出斜体内容
 							rList[lastEm]+=ilt.tEm[0];
 							r+=ilt.tEm[1];lastEm = -1;
 						}else{//这是开头
 							lastEm = rList.push(r) - 1;
-							r = '';lastEmType = t[i];
+							r = '';lastEmType = line[i];
 						}
 					}
 					break;
 				case '>'://有可能是HTML注释结尾
-					if(i>=2 && t.slice(i-2,i)=='--')r+='-->';//HTML注释结尾
+					if(i>=2 && line.slice(i-2,i)=='--')r+='-->';//HTML注释结尾
 					else r+='>';//否则当成>字符输出
 					break;
 				case '<'://可能是自动链接或自动邮箱或者是HTML标签或者干脆就是一个<字符
-					if(t.slice(i+1,i+4)=='!--'){r+='<!--';break;}//考虑一种特殊情况,HTML注释
+					if(line.slice(i+1,i+4)=='!--'){r+='<!--';break;}//考虑一种特殊情况,HTML注释
 					
 					tB = 1;//表示有可能是邮箱或URL
 					for(nextLoc=i+1;nextLoc<len;nextLoc++){//找到>在哪里
-						if(t[nextLoc]=='>')break;
-						if(t[nextLoc]==' '||t[nextLoc]=='\t')tB=0;//出现空白字符了,不可能是邮箱或URL了
+						if(line[nextLoc]=='>')break;
+						if(line[nextLoc]==' '||line[nextLoc]=='\t')tB=0;//出现空白字符了,不可能是邮箱或URL了
 					}
 					if(nextLoc >= len){r+='&lt;';break;}//都找不到>,那就转义输出吧
 					
-					tS = t.slice(i+1,nextLoc);//选出<>内的内容
+					tS = line.slice(i+1,nextLoc);//选出<>内的内容
 					if(tB){//如果还有可能是 url 或 email
 						if(regex.url.test(tS)){//内容是URL
 							r += tag.tA[1] + tS + tag.tA[2] + tS + tag.tA[3];
@@ -759,31 +767,31 @@
 					r+='<'//当作正常字符输出;
 					break;
 				case '!'://如果不是初判图片才输出
-					if(t[i+1]!='[')r+='!';break;
+					if(line[i+1]!='[')r+='!';break;
 				case '['://进入了可链接(Linkable)元素区块
 					//判断类型
-					if(t[i-1]=='!' && (lastMean!=rList.length || lastMeanOffset!=i-1))linkType='i';//图片
-					else if(t[i+1]=='^')linkType='s';//脚注型
+					if(line[i-1]=='!' && (lastMean!=rList.length || lastMeanOffset!=i-1))linkType='i';//图片
+					else if(line[i+1]=='^')linkType='s';//脚注型
 					else linkType='';//链接
 					var hadEmbedImg = 0;//是否在遍历的时候发现了内嵌图片的开始标记
 					//循环为了读取到完整的可链接元素信息
 					//done用于判断是否获得完整信息后才结束(即是否成功输出了可链接元素)
-					for(var j=i+1,done=0;j<len;j++){switch(t[j]){
+					for(var j=i+1,done=0;j<len;j++){switch(line[j]){
 						//如果是图片模式内部就不能有![,如果是链接模式内部就不能有[
 						case '!':
-							if(t[j+1]!='[')break;//仅仅是感叹号
+							if(line[j+1]!='[')break;//仅仅是感叹号
 							if(linkType!='')j=len;//图片模式和脚注模式跳过
 							else hadEmbedImg=1,j++;//标记内嵌图片,跳过[
 							break;
 						case '`'://跳过代码块
-							tS=(t[j+1]=='`')?'``':'`';tI=tS.length;
-							if((nextLoc = t.indexOf(tS,j+tI)) == -1)j+=tI-1;
+							tS=(line[j+1]=='`')?'``':'`';tI=tS.length;
+							if((nextLoc = line.indexOf(tS,j+tI)) == -1)j+=tI-1;
 							else j=nextLoc+tI-1;
 							break;
 						case '[':j=len;break;//可链接元素内不允许再嵌套一次链接
 						case ']'://找到可链接元素的标题/文本部分结束符了
 							//先保存标题部分
-							linkTitle = t.slice(i+1,j);
+							linkTitle = line.slice(i+1,j);
 							if(linkType=='s'){//如果是脚注,那就直接输出了
 								tO = refSupManager.get(linkTitle);
 								if(tO)//该脚注信息是否存在
@@ -791,16 +799,16 @@
 										,done=1,i=j,j=len;
 								break;
 							}
-							tS=t[j+1];
+							tS=line[j+1];
 							var toFind;//可链接元素的结尾符号
 							if(tS=='(')toFind=')';
-							else if(tS=='[' || (tS==' '&&t[j+2]=='['))toFind=']';
+							else if(tS=='[' || (tS==' '&&line[j+2]=='['))toFind=']';
 							else {j=len;break;}//发现无法匹配格式](或] [,不是可链接元素
 							tI = tS==' '?j+3:j+2;//查找开始点,截取点
-							if((nextLoc = t.indexOf(toFind,tI)) != -1){//正常收尾
+							if((nextLoc = line.indexOf(toFind,tI)) != -1){//正常收尾
 								//如果之前有内嵌图片的标记头就跳过这个收尾
 								if(hadEmbedImg){hadEmbedImg=0;break;}
-								linkContent = t.slice(tI,nextLoc).trim();//保存链接内容:链接及链接标题部分
+								linkContent = line.slice(tI,nextLoc).trim();//保存链接内容:链接及链接标题部分
 								if(toFind==']'){//参考式,则解析成真实链接内容
 									if(linkContent.length==0)linkContent=linkTitle;//如果留空,则表示参考式名称就是标题文本
 									tO = refSupManager.get(linkContent);
@@ -829,7 +837,7 @@
 					}
 					break;
 				default://基本字符
-					r+=t[i];
+					r+=line[i];
 				}
 			}
 			//将最后一个子句推入
