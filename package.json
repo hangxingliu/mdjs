@@ -6,7 +6,11 @@
   "dependencies": {},
   "devDependencies": {
     "uglify-js": "*",
-    "colors": "*"
+    "colors": "*",
+    "fs-extra": "*",
+    "babel-plugin-transform-es2015-arrow-functions": "*",
+    "babel-plugin-transform-es2015-template-literals": "*",
+    "babel-core": "*"
   },
   "scripts": {
     "build": "node ./build.js",
