@@ -131,8 +131,10 @@
 
 		var refLinkProviders = [];		
 		this.addRefLinkProvider = provider => refLinkProviders.push(provider);
-		this.resolveRefLink = (link) => {
-			// TODO
+		this._resolveRefLink = referName => {
+			for(var i = 0, result; i < refLinkProviders.length ; i++ )
+				if (result = refLinkProviders[i](referName))
+					return result.url ? result : { url: result };
 		};
 	}
 
@@ -826,11 +828,16 @@
 								if (toFind == ']') {//参考式,则解析成真实链接内容
 									if (titleableLink.length == 0) titleableLink = linkContent;//如果留空,则表示参考式名称就是标题文本
 									tmpObject = footRefManager.get(titleableLink);
-									if (!tmpObject) { j = len; break; }//该参考式不存在
+									if (!tmpObject) {
+										if (!(tmpObject = render._resolveRefLink(titleableLink))) {
+											//该参考式不存在
+											j = len; break;
+										}
+									}
 								}else{//行内式解析
 									tmpObject = analyzeTitleableLink(titleableLink);
 								}
-								linkURL = tmpObject.url;linkTitle = tmpObject.title;
+								linkURL = tmpObject.url;linkTitle = tmpObject.title || '';
 								if (linkType == 'i')//输出图片
 									r += render.image(linkURL, linkTitle, linkContent);
 								else//输出链接
@@ -839,12 +846,13 @@
 							}
 							j=len;
 							break;
-					}}
-					if(!done && j>=len){//没有有效的尾部,当正常字符串输出
+						}
+					}
+					if (!done && j >= len) {//没有有效的尾部,当正常字符串输出
 						switch(linkType){
-						case 's':r+='[^';i++;break;
-						case 'i':r+='![';break;
-						default :r+='[';
+						case 's': r += '[^'; i++; break;
+						case 'i': r += '!['; break;
+						default: r += '[';
 						}
 					}
 					break;
