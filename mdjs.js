@@ -29,7 +29,18 @@
 	 * @description 1024长度的空格字符串
 	 */
 	var space1024String = new Array(1024).join(' ');
-	
+
+	/**
+	 * @description 对一个字符串进行HTML转义(把空格,<,>,",'转换为)
+	 * @param {String} str 字符串
+	 * @return {String} 转义后的HTML
+	 */
+	function escapedHTML(str) {
+		var str = str.replace(/&/g, '&gt;');
+		return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;').
+			replace(/\'/g, '&#39;').replace(/\"/g, '&quot;').replace(/\n/g, '</br>');
+	}
+
 	/**
 	 * @description 参考式 脚注 管理类
 	 */
@@ -38,19 +49,15 @@
 			footNoteList = [];//脚注 数组列表
 		//参考式content为{url:xxx,title:xxx}
 		//脚注content为{url:xxx,title:xxx,id:xxx,content:xxx}
-		this.set = function (name, content, isFootNote) {
+		this.set = (name, content, isFootNote) => {
 			//如果式脚注就分配ID
 			if (isFootNote)
 				content.id = footNoteList.push(content);
 			content.url = footNoteNameGenerator(content.id);
 			referMap[name.toLowerCase()] = content;
 		};
-		this.get = function (name) {
-			return referMap[name.toLowerCase()];
-		};
-		this.getFootNoteList = function () {
-			return footNoteList;
-		};
+		this.get = name => referMap[name.toLowerCase()];
+		this.getFootNoteList = () => footNoteList;
 	}
 
 	/**
@@ -60,66 +67,86 @@
 		var levelStack = [],
 			typeStack = [],
 			stackLength = 0;
-		this.topLevel = function () { return stackLength ? levelStack[stackLength - 1] : -1; };
-		this.topType = function () { return stackLength ? typeStack[stackLength - 1] : -1;}
-		this.push = function (level, type) {
+		this.topLevel = () => stackLength ? levelStack[stackLength - 1] : -1;
+		this.topType = () => stackLength ? typeStack[stackLength - 1] : -1;
+		this.push = (level, type) => {
 			levelStack.push(level);
 			typeStack.push(type);
 			stackLength++;
 		};
-		this.pop = function () {
+		this.pop = () => {
 			levelStack.pop();
 			typeStack.pop();
 			stackLength = levelStack.length;
 		};
 	}
 	
-	function ClassMdjs() {
-		// var thiz = this;
+	/**
+	 * @description 用于渲染Markdown的类
+	 */
+	function ClassMdjsRenderer() {
+		this.tagHr = '<hr />';
+		this.tagBr = '<br />';
 
-		/**
-		 * @description 表格列的对齐样式class="md_table_xxx"
-		 */
-		var tbAlign = ['left', 'mid', 'right'];
+		this.tagP = ['<p>', '</p>'];
+		this.tagQuote = ['<blockquote>', '</blockquote>'];
+		this.tagDel = ['<del>', '</del>'];
+		this.tagStrong = ['<strong>', '</strong>'];
+		this.tagEm = ['<em>', '</em>'];
+		this.tagInlineCode = ['<code>', '</code>'];
+		this.tagCodeBlock =  ['<pre><code data-lang="$language">', '</code></pre>']
+
+		this.tagList = ['<ul>', '</ul>'];
+		this.tagOrderList = ['<ol>', '</ol>'];
+		this.tagListItem = ['<li>', '</li>'];
 		
-		/**
-		 * @description 行内样式的HTML标签
-		 */
-		var inlineTag = {
-			tStrong: ['<strong>', '</strong>'],
-			tEm: ['<em>', '</em>'],
-			tCode: ['<code>', '</code>'],
-			tSupStr: '<sup><a title="%s" href="%s">%s</a></sup>',
-			tAStr: '<a title="%s" href="%s">%s</a>',
-			tImgStr: '<img alt="%s" title="%s" src="%s" />',
-			tSup: '',tA: '', tImg: ''
-		};
-		inlineTag.tSup = inlineTag.tSupStr.split('%s');
-		inlineTag.tA = inlineTag.tAStr.split('%s');
-		inlineTag.tImg = inlineTag.tImgStr.split('%s');
 
-		/**
-		 * @description 整行样式的HTML标签
-		 */		
-		var tag = {
-			tBlock: ['<blockquote><p>', '</p></blockquote>\n'],
-			tCode: ['<pre><code data-lang="$lang">', '</code></pre>\n'],//lang会被替换被具体语言,若没设置具体语言则为空白字符串
-			tList: ['<li>', '<ol>', '<ul>', '</li>\n', '</ol>\n', '</ul>\n'],
-			tP: ['<p>', '</p>'],
-			tToc: ['<div class="md_toc">\n', '<ol>\n',
-				'<a href="#$href"><li>', '</li></a>', '</ol>', '</div>\n'],
-			tFoot: ['<div class="md_foot">\n<ol>\n',
-				'<li name="%s" id="%s" >', '</li>', '</ol></div>\n'],
-			tA: ['<a href="mailto:', '<a href="', '">', '</a>'],
-			tTable: ['<table class="md_table">\n<thead>\n', '</thead>\n<tbody>\n', '</tbody>\n</table>\n', '<tr>', '</tr>\n',//0,1,2,3,4
-				'<th class="$align">', '</th>', '<td class="$align">', '</td>', 'md_table_']//5,6,7,8,9
+		this.tagTOC = ['<div class="md_toc">', '</div>'];
+		this.tagTOCList = ['<ol>','</ol>'];
+		this.tagTOCItem = ['<a href="#$uri"><li>', '</li></a>'];
+		
+		this.tagFootNote = ['<div class="md_foot"><ol>', '</ol></div>'];
+		
+		this.heading = (level, name, content) =>
+			`<h${level} id="${name}" name="${name}">${content}</h${level}>`;
+		this.link = (uri, title, content) =>
+			`<a title="${escapedHTML(title)}" href="${encodeURI(uri)}">${content}</a>`;
+		this.email = email => `<a href="mailto:${email}">${email}</a>`;
+		this.image = (uri, title, altText) =>
+			`<img alt="${escapedHTML(altText)}" title="${escapedHTML(title)}" src="${encodeURI(uri)}" />`;
+		this.footNoteLink = (uri, title, content) =>
+			`<sup><a title="${escapedHTML(title)}" href="${encodeURI(uri)}">${content}</a></sup>`;
+		this.table = (headContent, bodyContent) => 
+			`<table class="md_table"><thead>${headContent}</thead><tbody>${bodyContent}</tbody></table>`;
+		this.tableRow = (isHead, cols, align) => {
+			var result = '<tr>',
+				wrapper0 = isHead ? '<th style="text-align: {0}">' : '<td style="text-align: {0}">',
+				wrapper1 = isHead ? '</th>' : '</td>',
+				alignValues = ['left', 'center', 'right'];
+			for (var i = 0; i < cols.length; i++)
+				result += wrapper0.replace('{0}', alignValues[align[i]]) + cols[i] + wrapper1;
+			return result + '</tr>'
+		}
+		this.footNode = (name, content) => `<li name="${name}" id="${name}">${content}</li>`;
+
+		var refLinkProviders = [];		
+		this.addRefLinkProvider = provider => refLinkProviders.push(provider);
+		this.resolveRefLink = (link) => {
+			// TODO
 		};
+	}
+
+	function ClassMdjs() {
 
 		var footNoteNameGenerator = function (id) { return 'markdown_foot_' + id };
 		
 		//参考式 脚标 管理器
 		var footRefManager = new ClassMdjsReferManager(footNoteNameGenerator);
 		var listItemStack = new ClassMdjsListItemStack();
+
+		//Markdown内容渲染器
+		var render = new ClassMdjsRenderer();
+		this.render = render;
 
 		/**
 		 * @description 将一个 Markdown 文本解析为可显示的HTML
@@ -215,17 +242,6 @@
 		}
 
 		/**
-		 * @description 对一个字符串进行HTML转义(把空格,<,>,",'转换为)
-		 * @param {String} str 字符串
-		 * @return {String} 转义后的HTML
-		 */
-		function escapedHTML(str) {
-			var str = str.replace(/&/g, '&gt;');
-			return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;').
-				replace(/\'/g, '&#39;').replace(/\"/g, '&quot;').replace(/\n/g, '</br>');
-		}
-
-		/**
 		 * @description 获得一行语句前面的空白字符(空格,Tab)数,Tab算四个
 		 * @param {String} str 语句
 		 * @return {Number} 语句前的空白字符的数量
@@ -303,7 +319,7 @@
 				if(isThisLineInCodeBlock){
 					if(trimedLine=='```'){//代码结束了
 						isThisLineInCodeBlock = false;
-						resultMarkdown += tag.tCode[1];
+						resultMarkdown += render.tagCodeBlock[1];
 						continue;
 					}
 					resultMarkdown += (isThisLineInCodeBlock ? '\n' : '') + escapedHTML(lines[i]);
@@ -325,7 +341,7 @@
 				if (trimedLine.length == 0) {
 					//如果段落还没有结束了, 就结束当前段落然后输出</p>
 					if (!isParagraphFinished) {
-						resultMarkdown += tag.tP[1];
+						resultMarkdown += render.tagP[1];
 						isParagraphFinished = true;
 					}
 					continue;
@@ -335,7 +351,7 @@
 				if (leftWhiteLength < 4) {
 					if (trimedLine.startsWith('```')) {//进入代码块
 						var lang = trimedLine.slice(3).trim();
-						resultMarkdown+=tag.tCode[0].replace('$lang',lang);
+						resultMarkdown += render.tagCodeBlock[0].replace('$language', lang);
 						isThisLineInCodeBlock = true;
 						continue;
 					}
@@ -353,7 +369,7 @@
 						var tocMark = titleText = handlerInline(titleText,0);
 						tocLevel[tocLen]  = tmpHeaderLevel;
 						tocTitle[tocLen++]= tocMark = tocMark.trim().replace(regex.delHTML,'');
-						resultMarkdown += '<h' + tmpHeaderLevel + ' id="' + tocMark + '" name="' + tocMark + '">' + titleText + '</h' + tmpHeaderLevel + '>\n';
+						resultMarkdown += render.heading(tmpHeaderLevel, tocMark, titleText);
 						continue;
 					}
 					
@@ -376,12 +392,12 @@
 								//如果没有 > 开头的话就保留原来的字符串(防止丢失行首的空格)
 							quoteLines.push(tmpStr);
 						}
-						resultMarkdown += tag.tBlock[0] + handlerLines(quoteLines, true, options) + tag.tBlock[1];
+						resultMarkdown += render.tagQuote[0] + handlerLines(quoteLines, true, options) + render.tagQuote[1];
 						i = k - 1;
 						continue;
 					}
 					//横线
-					if (isCutLine(trimedLine)) { resultMarkdown += '<hr />'; continue; }
+					if (isCutLine(trimedLine)) { resultMarkdown += render.tagHr; continue; }
 					
 					
 					//目录
@@ -393,13 +409,14 @@
 						//两行表格语句确定表格结构
 						if(i<linesLength-1 && (tbFmt = handlerTbFmt(lines[i+1].trim(),tbRet.length) )!=false){
 							//表格头部
-							resultMarkdown+=tag.tTable[0]+tag.tTable[3]+genTbTr(tbRet,tbFmt,true)+tag.tTable[4];
-							resultMarkdown+=tag.tTable[1];//表格主体开始
-							for(var j=i+2;j<linesLength;j++){
-								if((tbRet = handlerTbLine(lines[j].trim())) == false)break;//不是表格语句了
-								resultMarkdown+=tag.tTable[3]+genTbTr(tbRet,tbFmt,false)+tag.tTable[4];
+							var tbHead = render.tableRow(true, tbRet, tbFmt);
+							var tbBody = '';
+							for (var j = i + 2; j < linesLength; j++){
+								if ((tbRet = handlerTbLine(lines[j].trim())) == false) break;//不是表格语句了
+								tbBody += render.tableRow(false, tbRet, tbFmt);
 							}
-							i=j-1;resultMarkdown+=tag.tTable[2];
+							i = j - 1;
+							resultMarkdown += render.table(tbHead, tbBody);
 							continue;
 						}
 					}
@@ -409,7 +426,7 @@
 					//代码块(需要检查上一行),普通文本
 					//代码块
 					if(i==0 || lines[i-1].trim().length == 0){
-						resultMarkdown += tag.tCode[0].replace('$lang','');
+						resultMarkdown += render.tagCodeBlock[0].replace('$language', lang);
 						var space = '',endL = i;//space是为了中间的空白行,endl是为了保存代码最后有效行在哪
 						for(var j=i,ltab;j<linesLength;j++){
 							if(lines[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
@@ -418,7 +435,7 @@
 								escapedHTML(lines[j].trim());
 							space='',endL = j;//重置空白行和记录最后有效行
 						}
-						resultMarkdown += tag.tCode[1];
+						resultMarkdown += render.tagCodeBlock[1];
 						i=endL;
 						continue;
 					}
@@ -435,7 +452,7 @@
 						var tocMark = titleText = handlerInline(trimedLine,0);
 						tocLevel[tocLen]  = level;
 						tocTitle[tocLen++]= tocMark = tocMark.trim().replace(regex.delHTML,'');
-						resultMarkdown+='<h'+level+' id="'+tocMark+'" name="'+tocMark+'">'+titleText+'</h'+level+'>\n';
+						resultMarkdown += render.heading(level, tocMark, titleText);
 						i++;//跳过下一行
 						continue;
 					}
@@ -454,11 +471,11 @@
 				} else {
 					//新的段落开始<p>
 					if (isParagraphFinished)
-						tmpStr = tag.tP[0] + tmpStr;
+						tmpStr = render.tagP[0] + tmpStr;
 					//如果解析选项要求强制换行 或 改行末尾含有至少两个空格要求(换行)
 					if (options.alwaysNewline ||
 						isThereAtLeast2spaceInRight(currentLine))
-						tmpStr += '<br/>';
+						tmpStr += render.tagBr;
 					resultMarkdown += tmpStr;
 					isParagraphFinished = false;
 				}
@@ -477,31 +494,30 @@
 		
 		/**
 		 * 生成一个TOC目录的代码
-		 * @param {Array} tocTitle 目录节点的标题
-		 * @param {Array} tocLevel 目录节点的层次
-		 * @param {Number} tocLen 目录节点集合的长度
+		 * @param {Array<String>} tocTitle 目录节点的标题
+		 * @param {Array<Number>} tocLevel 目录节点的层次
 		 * @return {String} TOC 目录的HTML代码
 		 */
-		function handlerTOC(tocTitle, tocLevel, tocLen) {
-			var res = tag.tToc[0];
-			var tocI = [];
-			var tocILen = 0;
+		function handlerTOC(tocTitle, tocLevel) {
+			var res = render.tagTOC[0];
+			var levelStack = [], lastLevel;
 			var liHTML;
-			for (var i = 0; i < tocLen; i++) {
-				liHTML = tag.tToc[2].replace('$href', tocTitle[i]) + tocTitle[i] + tag.tToc[3];
-				if (tocILen == 0 || tocLevel[i] > tocI[tocILen - 1]) {
-					res += tag.tToc[1] + liHTML;
-					tocI[tocILen++] = tocLevel[i];
-				} else if (tocLevel[i] == tocI[tocILen - 1]) {
+			for (var i = 0; i < tocTitle.length; i++) {
+				liHTML = render.tagTOCItem[0].replace('$uri', tocTitle[i]) + tocTitle[i] + render.tagTOCItem[1];
+				if (levelStack.length == 0 || tocLevel[i] > lastLevel) {
+					res += render.tagTOCList[0] + liHTML;
+					levelStack.push(lastLevel = tocLevel[i]);
+				} else if (tocLevel[i] == lastLevel) {
 					res += liHTML;
 				} else {
-					res += tag.tToc[4];
-					tocILen--;
+					res += render.tagTOCList[1];
+					levelStack.pop();
+					lastLevel = levelStack[levelStack.length - 1];
 					i--;
 				}
 			}
-			while ((tocILen--) > 0) res += tag.tToc[4];
-			return res + tag.tToc[5];
+			while (levelStack.length) res += render.tagTOCList[1], levelStack.pop();
+			return res + render.tagTOC[1];
 		}
 
 		/**
@@ -525,25 +541,25 @@
 		 */
 		function handlerList(level, type, str) {
 			var topLevel = listItemStack.topLevel();//上一个列表的层次
-			var liHTML = tag.tList[0] + handlerInline(str,str.indexOf(' '),0) + tag.tList[3];
+			var liHTML = render.tagListItem[0] + handlerInline(str, str.indexOf(' '), 0) + render.tagListItem[1];
 			var res = '';
 			if(level > topLevel){//上一个列表的___子列表___
 				listItemStack.push(level,type);
-				return tag.tList[type] + liHTML;
+				return (type == 1 ? render.tagOrderList : render.tagList)[0] + liHTML;
 			}else if(level == topLevel){//上一个列表的___兄弟(并列)列表___
 				return liHTML;
 			}else{//上一个列表的___父列表___的___兄弟列表___
 				while(level<topLevel){//找到属于这个列表的兄弟列表
 					if (listItemStack.topType() == 1)//数字列表	
-						res+=tag.tList[4];
+						res += render.tagOrderList[1];
 					else//无序列表
-						res+=tag.tList[5];
+						res += render.tagList[1];
 					listItemStack.pop();
 					topLevel = listItemStack.topLevel();
 				}
 				if(topLevel==-1){//这个列表是最顶层的列表,即暂时没有兄弟列表,是一个新的列表集的开始
 					listItemStack.push(level,type);
-					return res + tag.tList[type] + liHTML;
+					return res + (type == 1 ? render.tagOrderList : render.tagList)[0] + liHTML;
 				}else{
 					return res + liHTML;
 				}
@@ -558,31 +574,14 @@
 			var res = '';
 			while(listItemStack.topLevel()!=-1){
 				if (listItemStack.topType() == 1)//数字列表	
-					res+=tag.tList[4];
+					res += render.tagOrderList[1];
 				else//无序列表
-					res+=tag.tList[5];
+					res += render.tagList[1];
 				listItemStack.pop();
 			}
 			return res;
 		}
 	
-		//===表格
-		/**
-		 * 通过给定的表格列数组和表格格式生成一个 tr 的 HTML 语句
-		 * @param {Array} tbRet 表格列数组
-		 * @param {Array} tbFmt 表格对齐格式数组
-		 * @param {Boolean} isHead 是否为头部(thead)的tr
-		 * @return {String} 一个 tr 的HTML语句
-		 */
-		function genTbTr(tbRet,tbFmt,isHead){
-			var res ='';
-			for(var k=0;k<tbRet.length;k++)
-				res+=tag.tTable[isHead?5:7].replace('$align',tag.tTable[9]+tbAlign[tbFmt[k]])//替换对齐样式
-					+handlerInline(tbRet[k],0)//表格内容
-					+tag.tTable[isHead?6:8];
-			return res;
-		}
-		
 		/**
 		 * @description 解析表格格式行,即为表格第二行,格式说明(0:左对齐,1:居中,2:右对齐)
 		 * @param {String} tStr trim()过的语句字符串
@@ -676,11 +675,9 @@
 			
 			var nextLoc;//下一次的位置
 			var linkType;//可链接元素的类型:'s':Sup;'i':Image;'':Link
-			var linkTitle,linkContent,linkURL,linkMore;//linkContent : linkURL "linkMore"
+			var linkContent,linkURL,linkTitle;
 			
 			var tmpString,tmpNumber,tmpObject,tmpBoolean;//临时变量
-			
-			var ilt = inlineTag;//InlineTag的缩写变量
 			
 			//遍历语句
 			for (var i = (start || 0); i < len; i++){
@@ -697,7 +694,7 @@
 					tmpString = (line[i + 1] == '`') ? '``' : '`'; tmpNumber = tmpString.length;//tS记录行内代码包裹的标记,tI记录前者长度	
 					if((nextLoc = line.indexOf(tmpString,i+tmpNumber))==-1)r+=tmpString;//如果往后找找不到可匹配的结束行内代码的标记,就正常输出
 					else{//找到了,输出行内代码
-						r+=ilt.tCode[0]+escapedHTML(line.slice(i+tmpNumber,nextLoc))+ilt.tCode[1];
+						r += render.tagInlineCode[0] + escapedHTML(line.slice(i + tmpNumber, nextLoc)) + render.tagInlineCode[1];
 						i=nextLoc;
 					}
 					i+=tmpNumber-1;//移动遍历光标
@@ -709,7 +706,7 @@
 							if(r==''){//表示新的子结果块列表才开始,~~包裹的内容为空,~~~~的情况,保留前面的两个~~
 								rList[lastDel]+='~~';
 							}else{//正常情况,输出删除线的文本
-								rList[lastDel]+='<del>';r+='</del>';lastDel = -1;
+								rList[lastDel] += render.tagDel[0]; r += render.tagDel[1]; lastDel = -1;
 							}
 						}else{//这是第一次出现~~标记,是个打头,记录一下并开启一个新的子结果块列表
 							lastDel = rList.push(r) - 1;r = '';
@@ -730,8 +727,8 @@
 								r+=line[i++]+line[i];break;	
 							}
 							//一切正常输出加粗内容
-							rList[lastStrong]+=ilt.tStrong[0];
-							r+=ilt.tStrong[1];lastStrong = -1;
+							rList[lastStrong] += render.tagStrong[0];
+							r += render.tagStrong[1]; lastStrong = -1;
 						}else{//这是开头
 							if(line[i+2]==line[i] && line[i+3]==line[i]){//四个连续的*或_,那就不解析前面两个,否则无法出现只想单纯表达四个*的效果
 								r+=line[i++]+line[i++];
@@ -746,8 +743,8 @@
 								r+=line[i];break;	
 							}
 							//一切正常输出斜体内容
-							rList[lastEm]+=ilt.tEm[0];
-							r+=ilt.tEm[1];lastEm = -1;
+							rList[lastEm] += render.tagEm[0];
+							r += render.tagEm[1]; lastEm = -1;
 						}else{//这是开头
 							lastEm = rList.push(r) - 1;
 							r = '';lastEmType = line[i];
@@ -770,12 +767,12 @@
 					
 					tmpString = line.slice(i+1,nextLoc);//选出<>内的内容
 					if(tmpBoolean){//如果还有可能是 url 或 email
-						if(regex.url.test(tmpString)){//内容是URL
-							r += tag.tA[1] + tmpString + tag.tA[2] + tmpString + tag.tA[3];
+						if (regex.url.test(tmpString)) {//内容是URL
+							r += render.link(tmpString, '', tmpString);
 							i = nextLoc;break;
 						}
-						if(regex.email.test(tmpString)){//内容是邮箱
-							r += tag.tA[0] + tmpString + tag.tA[2] + tmpString + tag.tA[3];
+						if (regex.email.test(tmpString)) {//内容是邮箱
+							r += render.email(tmpString);
 							i = nextLoc;break;
 						}
 					}
@@ -785,60 +782,60 @@
 					if(line[i+1]!='[') r+='!';break;
 				case '['://进入了可链接(Linkable)元素区块
 					//判断类型
-					if(line[i-1]=='!' && (lastMean!=rList.length || lastMeanOffset!=i-1))linkType='i';//图片
-					else if(line[i+1]=='^')linkType='s';//脚注型
-					else linkType='';//链接
+					if (line[i - 1] == '!' && (lastMean != rList.length || lastMeanOffset != i - 1)) linkType = 'i';//图片	
+					else if (line[i + 1] == '^') linkType = 's';//脚注型	
+					else linkType = '';//链接	
 					var hadEmbedImg = 0;//是否在遍历的时候发现了内嵌图片的开始标记
 					//循环为了读取到完整的可链接元素信息
 					//done用于判断是否获得完整信息后才结束(即是否成功输出了可链接元素)
-					for(var j=i+1,done=0;j<len;j++){switch(line[j]){
+					for (var j = i + 1, done = 0; j < len; j++){
+						switch (line[j]) {
 						//如果是图片模式内部就不能有![,如果是链接模式内部就不能有[
 						case '!':
-							if(line[j+1]!='[')break;//仅仅是感叹号
-							if(linkType!='')j=len;//图片模式和脚注模式跳过
-							else hadEmbedImg=1,j++;//标记内嵌图片,跳过[
+							if (line[j + 1] != '[') break;//仅仅是感叹号	
+							if (linkType != '') j = len;//图片模式和脚注模式跳过
+							else hadEmbedImg = 1, j++;//标记内嵌图片,跳过[
 							break;
 						case '`'://跳过代码块
-							tmpString=(line[j+1]=='`')?'``':'`';tmpNumber=tmpString.length;
-							if((nextLoc = line.indexOf(tmpString,j+tmpNumber)) == -1)j+=tmpNumber-1;
-							else j=nextLoc+tmpNumber-1;
+							tmpString = (line[j + 1] == '`') ? '``' : '`'; tmpNumber = tmpString.length;
+							if ((nextLoc = line.indexOf(tmpString, j + tmpNumber)) == -1) j += tmpNumber - 1;	
+							else j = nextLoc + tmpNumber - 1;
 							break;
-						case '[':j=len;break;//可链接元素内不允许再嵌套一次链接
+						case '[': j = len; break;//可链接元素内不允许再嵌套一次链接
 						case ']'://找到可链接元素的标题/文本部分结束符了
 							//先保存标题部分
-							linkTitle = line.slice(i+1,j);
+							linkContent = line.slice(i+1,j);
 							if(linkType=='s'){//如果是脚注,那就直接输出了
-								tmpObject = footRefManager.get(linkTitle);
-								if(tmpObject)//该脚注信息是否存在
-									r+=ilt.tSup[0]+ tmpObject.title +ilt.tSup[1]+ '#' +tmpObject.url +ilt.tSup[2]+ tmpObject.id +ilt.tSup[3]
-										,done=1,i=j,j=len;
+								tmpObject = footRefManager.get(linkContent);
+								if (tmpObject) {//该脚注信息是否存在
+									r += render.footNoteLink(tmpObject.url, tmpObject.title, tmpObject.id);
+									done = 1; i = j; j = len;
+								}
 								break;
 							}
-							tmpString=line[j+1];
+							tmpString = line[j + 1];
 							var toFind;//可链接元素的结尾符号
-							if(tmpString=='(')toFind=')';
-							else if(tmpString=='[' || (tmpString==' '&&line[j+2]=='['))toFind=']';
-							else {j=len;break;}//发现无法匹配格式](或] [,不是可链接元素
-							tmpNumber = tmpString==' '?j+3:j+2;//查找开始点,截取点
-							if((nextLoc = line.indexOf(toFind,tmpNumber)) != -1){//正常收尾
+							if (tmpString == '(') toFind = ')';
+							else if (tmpString == '[' || (tmpString == ' ' && line[j + 2] == '[')) toFind = ']';
+							else { j = len; break; }//发现无法匹配格式](或] [,不是可链接元素
+							tmpNumber = tmpString == ' ' ? j + 3 : j + 2;//查找开始点,截取点
+							if ((nextLoc = line.indexOf(toFind, tmpNumber)) != -1) {//正常收尾
 								//如果之前有内嵌图片的标记头就跳过这个收尾
-								if(hadEmbedImg){hadEmbedImg=0;break;}
-								linkContent = line.slice(tmpNumber,nextLoc).trim();//保存链接内容:链接及链接标题部分
-								if(toFind==']'){//参考式,则解析成真实链接内容
-									if (linkContent.length == 0) linkContent = linkTitle;//如果留空,则表示参考式名称就是标题文本
-									tmpObject = footRefManager.get(linkContent);
+								if (hadEmbedImg) { hadEmbedImg = 0; break; }
+								var titleableLink = line.slice(tmpNumber,nextLoc).trim();//保存链接内容:链接及链接标题部分
+								if (toFind == ']') {//参考式,则解析成真实链接内容
+									if (titleableLink.length == 0) titleableLink = linkContent;//如果留空,则表示参考式名称就是标题文本
+									tmpObject = footRefManager.get(titleableLink);
 									if (!tmpObject) { j = len; break; }//该参考式不存在
 								}else{//行内式解析
-									tmpObject = analyzeTitleableLink(linkContent);
+									tmpObject = analyzeTitleableLink(titleableLink);
 								}
-								linkURL = tmpObject.url;linkMore = tmpObject.title;
-								if(linkType=='i')//输出图片
-									r+=ilt.tImg[0] + escapedHTML(linkTitle)+ilt.tImg[1]
-										+ escapedHTML(linkMore)+ilt.tImg[2]+ encodeURI(linkURL)+ilt.tImg[3];
+								linkURL = tmpObject.url;linkTitle = tmpObject.title;
+								if (linkType == 'i')//输出图片
+									r += render.image(linkURL, linkTitle, linkContent);
 								else//输出链接
-									r+=ilt.tA[0] + escapedHTML(linkMore)+ilt.tA[1]
-										+encodeURI(linkURL)+ilt.tA[2]+ handlerInline(linkTitle,0)+ilt.tA[3];
-								done=1;i=nextLoc;
+									r += render.link(linkURL, linkTitle, handlerInline(linkContent, 0));	
+								done = 1; i = nextLoc;
 							}
 							j=len;
 							break;
@@ -873,13 +870,10 @@
 		 */
 		function handlerFoot(){
 			var list = footRefManager.getFootNoteList();
-			if(list.length==0)return '';
-			var tF = tag.tFoot;
-			var res = tF[0];
-			list.forEach(function (item) {
-				res += tF[1].replace(/%s/g, item.url) + handlerInline(item.content, 0) + tF[2];
-			});
-			return res+tF[3];
+			if (list.length == 0) return '';
+			var res = render.tagFootNote[0];
+			list.forEach(item => res += render.footNode(item.url, handlerInline(item.content, 0)));
+			return res + render.tagFootNote[1];
 		}
 
 	}/* </ClassMdjs> */
@@ -891,11 +885,10 @@
 	ClassMdjs.md2html = function (md, options) {
 		return mdjsInside.md2html(md, options);
 	}
+	ClassMdjs.escapedHTML = escapedHTML;
 	//Export functions, 导出函数和类
 	if (typeof module != 'undefined')
 		module.exports = ClassMdjs;
 	if (typeof window != 'undefined')
 		window.Mdjs = ClassMdjs;
 })();
-
-	
