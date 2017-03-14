@@ -4,7 +4,6 @@
 		"**/.git": true,
 		"**/.svn": true,
 		"**/.hg": true,
-		"**/.DS_Store": true,
-		"mdjs.min.js": true
+		"**/.DS_Store": true
 	}
 }

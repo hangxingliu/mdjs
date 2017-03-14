@@ -911,13 +911,15 @@
 	
 	//Static method
 	var mdjsInside = new ClassMdjs();
-	ClassMdjs.md2html = function (md, options) {
-		return mdjsInside.md2html(md, options);
-	}
+	ClassMdjs.md2html = (md, options) =>
+		mdjsInside.md2html(md, options);
 	ClassMdjs.escapedHTML = escapedHTML;
+	ClassMdjs.MdjsRenderer = ClassMdjsRenderer;
+	
+	ClassMdjs.Mdjs = ClassMdjs;
 	//Export functions, 导出函数和类
-	if (typeof module != 'undefined')
-		module.exports = ClassMdjs;
+	if (typeof module == 'object' && typeof global == 'object')
+		module.exports = global.Mdjs = ClassMdjs;
 	if (typeof window != 'undefined')
 		window.Mdjs = ClassMdjs;
 })();
