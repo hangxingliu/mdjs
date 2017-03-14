@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
-const TO = 'mdjs.min.js',
+const TO = 'mdjs.min.js',	
 	TO_SOURCE_MAP = 'mdjs.min.js.map',
-	FROM = 'mdjs.js';
+	FROM = 'mdjs.js',
+	POLYFILL = 'polyfill.js';
 
 var compressor = require('uglify-js'),
 	babel = require('babel-core'),
-	{ existsSync, unlinkSync, writeFileSync } = require('fs');
+	{ existsSync, unlinkSync, writeFileSync, readFileSync } = require('fs');
 
 (function main() {
 	console.log(`Cleaning target file "${TO}"...`);
@@ -22,6 +23,9 @@ var compressor = require('uglify-js'),
 	}, (err, { code, map}) => {
 		err && throwError(err);
 		try {
+			console.log("Concatenating polyfill scripts...");
+			code = readFileSync(POLYFILL, 'utf8') + '\n' + code;
+			//TODO handle source map
 			console.log("UglifyJs minifying codes...");
 			var result = compressor.minify(code, {
 				fromString: true,
@@ -31,7 +35,9 @@ var compressor = require('uglify-js'),
 
 			console.log("Writing to target file...");
 			writeFileSync(TO, result.code);
-			writeFileSync(TO_SOURCE_MAP, result.map );
+			
+			//TODO handle source map			
+			// writeFileSync(TO_SOURCE_MAP, result.map );
 			
 			console.log('\n  build success!\n');
 
