@@ -21,7 +21,8 @@
 		regex_email = /^[\w-]+@[\w-]+\.[\w\.-]+$/g,
 		regex_replaceCRLF = /\r\n/g,
 		regex_splitLine = /[\r\n]/,
-		regex_footRefDefine = /^\[([\^]?)(.+)\]\:\s+(.+)$/;
+		regex_footRefDefine = /^\[([\^]?)(.+)\]\:\s+(.+)$/,
+		regex_code_language = /\$language/g;
 
 	/**
 	 * @description 1024长度的空格字符串
@@ -373,7 +374,7 @@
 				if (leftWhiteLength < 4) {
 					if (trimedLine.startsWith('```')) {//进入代码块
 						var lang = trimedLine.slice(3).trim();
-						resultMarkdown += tag.codeBlock[0].replace('$language', lang);
+						resultMarkdown += tag.codeBlock[0].replace(regex_code_language, lang);
 						isThisLineInCodeBlock = true;
 						continue;
 					}
@@ -447,7 +448,7 @@
 					//代码块(需要检查上一行),普通文本
 					//代码块
 					if(i==0 || lines[i-1].trim().length == 0){
-						resultMarkdown += tag.codeBlock[0].replace('$language', lang);
+						resultMarkdown += tag.codeBlock[0].replace(regex_code_language, '');
 						var space = '',endL = i;//space是为了中间的空白行,endl是为了保存代码最后有效行在哪
 						for(var j=i,ltab;j<linesLength;j++){
 							if(lines[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出

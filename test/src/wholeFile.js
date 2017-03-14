@@ -15,6 +15,13 @@ describe('whole file test', () => {
 	it('#all in one markdown document to HTML', () => {
 		let mdjs = new Mdjs();
 
+		mdjs.render.func.table = (headContent, bodyContent) => 
+			`<table class="table table-striped"><thead>${headContent}</thead><tbody>${bodyContent}</tbody></table>`,
+			mdjs.render.tag.codeBlock = [
+				'<div class="card my-2"><div class="card-block"><h6 class="card-subtitle text-muted">$language</h6>' +
+				'<pre><code>',
+				'</code></pre></div></div>'],
+			
 		//Add wikipedia link provider
 		mdjs.render.addRefLinkProvider(
 			name => name.startsWith('wiki:') ?

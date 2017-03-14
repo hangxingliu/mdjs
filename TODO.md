@@ -13,10 +13,10 @@
 - [x] 添加自定义渲染器的支持
 - [x] 完成Typescript模板文件
 - [x] 编写单元测试
-- [ ] 整理一下目录结构
+- [x] 整理一下目录结构
 - [ ] 将 Polyfill 文件构建入mdjs.min.js文件中
 - [ ] 整理一下README.md
-- [ ] 编写 Bootstrap 外观 Markdown 渲染器
+- [x] 编写 Bootstrap 外观 Markdown 渲染器
 - [ ] 发布 1.0.0 beta版
 - [ ] 添加链接处理器
 - [ ] 添加只有一对中括号的参考式链接,例如: this is [wiki: github]
