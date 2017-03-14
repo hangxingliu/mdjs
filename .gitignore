@@ -1,5 +1,5 @@
-test
 assets
+test/env/dist
 
 # ======= Node ignore file from https://github.com/github/gitignore =========
 

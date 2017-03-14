@@ -1,0 +1,7 @@
+assets
+.vscode
+typescript
+.eslintrc.json
+cSpell.json
+TODO.md
+test/env/dist
