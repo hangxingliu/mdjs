@@ -43,8 +43,9 @@
 
 	/**
 	 * @description 参考式 脚注 管理类
+	 * @param {ClassMdjsRenderer} render
 	 */
-	function ClassMdjsReferManager(footNoteNameGenerator) {
+	function ClassMdjsReferManager(render) {
 		var referMap = {},//参考式 脚注 Map映射
 			footNoteList = [];//脚注 数组列表
 		//参考式content为{url:xxx,title:xxx}
@@ -53,7 +54,7 @@
 			//如果式脚注就分配ID
 			if (isFootNote)
 				content.id = footNoteList.push(content);
-			content.url = footNoteNameGenerator(content.id);
+			content.url = render.footNoteName(content.id);
 			referMap[name.toLowerCase()] = content;
 		};
 		this.get = name => referMap[name.toLowerCase()];
@@ -127,8 +128,9 @@
 				result += wrapper0.replace('{0}', alignValues[align[i]]) + cols[i] + wrapper1;
 			return result + '</tr>'
 		}
-		this.footNode = (name, content) => `<li name="${name}" id="${name}">${content}</li>`;
-
+		this.footNote = (name, content) => `<li name="${name}" id="${name}">${content}</li>`;
+		this.footNoteName = id => `markdown_foot_${id}`;
+		
 		var refLinkProviders = [];		
 		this.addRefLinkProvider = provider => refLinkProviders.push(provider);
 		this._resolveRefLink = referName => {
@@ -140,14 +142,12 @@
 
 	function ClassMdjs() {
 
-		var footNoteNameGenerator = function (id) { return 'markdown_foot_' + id };
-		
-		//参考式 脚标 管理器
-		var footRefManager = new ClassMdjsReferManager(footNoteNameGenerator);
-		var listItemStack = new ClassMdjsListItemStack();
-
 		//Markdown内容渲染器
 		var render = new ClassMdjsRenderer();
+
+		//参考式 脚标 管理器
+		var footRefManager = new ClassMdjsReferManager(render);
+		var listItemStack = new ClassMdjsListItemStack();
 		this.render = render;
 
 		/**
@@ -163,7 +163,7 @@
 			
 			try {
 				//初始化参考式管理器
-				footRefManager = new ClassMdjsReferManager(footNoteNameGenerator);
+				footRefManager = new ClassMdjsReferManager(render);
 				//初始化列表元素栈
 				listItemStack = new ClassMdjsListItemStack();
 
@@ -233,14 +233,14 @@
 		 */
 		function isCutLine(str) {
 			var c = str[0];
-			if(c!='=' && c!='-' && c!='_' && c!='*')return false;
+			if (c != '=' && c != '-' && c != '_' && c != '*') return false;
 			for (var i = 0, count = 0; i < str.length; i++){
 				if (str[i] == ' ' || str[i] == '\t') continue;
 				if (str[i] != c) return false;
 				count++;
 				//if(count==3)break; Fix Bug 如果是这样的一句:如果一句***后面还有内容就当成正常语句输出
 			}
-			return count>=3;
+			return count >= 3;
 		}
 
 		/**
@@ -362,15 +362,15 @@
 					tmpHeaderLevel = isThisLineHeaderAndGetLevel(trimedLine);
 					//是标题
 					if (tmpHeaderLevel != 0) {
-						var cutEnd = trimedLine.length-1;//标题内容的结尾位置
-						for(;cutEnd>tmpHeaderLevel;cutEnd--)
-							if(trimedLine[cutEnd]!='#')//为了去掉结尾的#号
+						var cutEnd = trimedLine.length - 1; //标题内容的结尾位置
+						for (; cutEnd > tmpHeaderLevel; cutEnd--)
+							if (trimedLine[cutEnd] != '#') //为了去掉结尾的#号
 								break;
-						var titleText = trimedLine.slice(tmpHeaderLevel,cutEnd+1);
+						var titleText = trimedLine.slice(tmpHeaderLevel, cutEnd + 1);
 						//tocMark 给当前标题标记的 ID 和 name,为了能让TOC目录点击跳转
-						var tocMark = titleText = handlerInline(titleText,0);
-						tocLevel[tocLen]  = tmpHeaderLevel;
-						tocTitle[tocLen++]= tocMark = tocMark.trim().replace(regex.delHTML,'');
+						var tocMark = titleText = handlerInline(titleText, 0);
+						tocLevel[tocLen] = tmpHeaderLevel;
+						tocTitle[tocLen++] = tocMark = tocMark.trim().replace(regex.delHTML, '');
 						resultMarkdown += render.heading(tmpHeaderLevel, tocMark, titleText);
 						continue;
 					}
@@ -401,20 +401,19 @@
 					//横线
 					if (isCutLine(trimedLine)) { resultMarkdown += render.tagHr; continue; }
 					
-					
 					//目录
 					//记录当前位置, 在全部文档解析完后输出到这个位置
 					if (trimedLine == '[TOC]') { tocPosition = resultMarkdown.length; continue; }
 					
 					//表格
-					if((tbRet = handlerTbLine(trimedLine)) != false){//可能是表格
+					if ((tbRet = handlerTbLine(trimedLine)) != false) { //可能是表格
 						//两行表格语句确定表格结构
-						if(i<linesLength-1 && (tbFmt = handlerTbFmt(lines[i+1].trim(),tbRet.length) )!=false){
+						if (i < linesLength - 1 && (tbFmt = handlerTbFmt(lines[i + 1].trim(), tbRet.length)) != false) {
 							//表格头部
 							var tbHead = render.tableRow(true, tbRet, tbFmt);
 							var tbBody = '';
-							for (var j = i + 2; j < linesLength; j++){
-								if ((tbRet = handlerTbLine(lines[j].trim())) == false) break;//不是表格语句了
+							for (var j = i + 2; j < linesLength; j++) {
+								if ((tbRet = handlerTbLine(lines[j].trim())) == false) break; //不是表格语句了
 								tbBody += render.tableRow(false, tbRet, tbFmt);
 							}
 							i = j - 1;
@@ -433,7 +432,7 @@
 						for(var j=i,ltab;j<linesLength;j++){
 							if(lines[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
 							if((ltab = howManyWhiteInLeft(lines[j]))<4)break;//空白小于一个Tab键了,退出代码块
-							resultMarkdown += space + (j==i?'':'\n') + getSpaceString(ltab-2) +//去掉开头多余的空白字符
+							resultMarkdown += space + (j == i ? '' : '\n') + getSpaceString(ltab - 2) +//去掉开头多余的空白字符
 								escapedHTML(lines[j].trim());
 							space='',endL = j;//重置空白行和记录最后有效行
 						}
@@ -600,7 +599,7 @@
 				if(r[i][r[i].length-1]==':')tmp = (r[i][0]==':')?1:2;//右边有:,右对齐,左边又有:,居中
 				ret[i] = tmp;//存入返回结果
 			}
-			for(;i<col;i++)ret[i]=0;//补齐剩下的列
+			for (; i < col; i++)ret[i] = 0;//补齐剩下的列
 			return ret;
 		}
 		/**
@@ -645,8 +644,7 @@
 		 * @param {Number} len 指定长度,最长1024
 		 */
 		function getSpaceString(len){
-			if(len<=0)return '';
-			return space1024String.slice(0,len);
+			return len <= 0 ? '' : space1024String.slice(0,len);
 		}		
 
 		/**
@@ -660,12 +658,11 @@
 			之所以使用结果块列表, 是因为可以方便的在 某个结果块的尾部插入<strong><em><del>标签
 			*/
 			
-			var len = line.length;//text的长度
-			var rList = [];//返回结果块列表
-			var r = '';//返回结果中最新的一条子结果
-			
+			var len = line.length; //text的长度
+			var rList = []; //返回结果块列表
+			var r = ''; //返回结果中最新的一条子结果
 			//上一次转义了的字符所在结果块列表中的哪一行(或者说当时结果块列表有多少行了),和那行的偏移量
-			var lastMean = -1,lastMeanOffset = -1;
+			var lastMean = -1, lastMeanOffset = -1;
 			
 			//上一次出现<strong><i><del>分别是在哪个结果块列表的末尾
 			var lastStrong = -1;
@@ -674,53 +671,59 @@
 			//上一次出现<strong><i>的类型是*还是_
 			var lastStType = '*';
 			var lastEmType = '*';
-			
-			var nextLoc;//下一次的位置
-			var linkType;//可链接元素的类型:'s':Sup;'i':Image;'':Link
-			var linkContent,linkURL,linkTitle;
-			
-			var tmpString,tmpNumber,tmpObject,tmpBoolean;//临时变量
+
+			var nextLoc; //下一次的位置
+			var linkType; //可链接元素的类型:'s':Sup;'i':Image;'':Link
+			var linkContent, linkURL, linkTitle;
+
+			var tmpString, tmpNumber, tmpObject, tmpBoolean; //临时变量
 			
 			//遍历语句
 			for (var i = (start || 0); i < len; i++){
 				switch(line[i]){
 				case '\\'://转义字符\打头
 					//如果\后面的字符是可转义字符才转义
-					if(specialCharacters.indexOf(line[i+1]) >= 0)	
+					if (specialCharacters.indexOf(line[i + 1]) >= 0)
 						lastMean = rList.length,
-							lastMeanOffset = ++i;//++i为了移动到下一位
-					r += line[i];	
+						lastMeanOffset = ++i; //++i为了移动到下一位
+					r += line[i];
 					break;
 						
 				case '`'://行内代码
-					tmpString = (line[i + 1] == '`') ? '``' : '`'; tmpNumber = tmpString.length;//tS记录行内代码包裹的标记,tI记录前者长度	
-					if((nextLoc = line.indexOf(tmpString,i+tmpNumber))==-1)r+=tmpString;//如果往后找找不到可匹配的结束行内代码的标记,就正常输出
-					else{//找到了,输出行内代码
+					tmpString = (line[i + 1] == '`') ? '``' : '`';
+					tmpNumber = tmpString.length; //tS记录行内代码包裹的标记,tI记录前者长度	
+					if ((nextLoc = line.indexOf(tmpString, i + tmpNumber)) == -1) r += tmpString; //如果往后找找不到可匹配的结束行内代码的标记,就正常输出
+					else { //找到了,输出行内代码
 						r += render.tagInlineCode[0] + escapedHTML(line.slice(i + tmpNumber, nextLoc)) + render.tagInlineCode[1];
-						i=nextLoc;
+						i = nextLoc;
 					}
-					i+=tmpNumber-1;//移动遍历光标
+					i += tmpNumber - 1; //移动遍历光标
 					break;
 						
 				case '~'://删除线
-					if(line[i+1]=='~'){//两个~才表示删除线
-						if(lastDel>=0){//前面出现过一次~~了,这个是收尾
-							if(r==''){//表示新的子结果块列表才开始,~~包裹的内容为空,~~~~的情况,保留前面的两个~~
-								rList[lastDel]+='~~';
-							}else{//正常情况,输出删除线的文本
-								rList[lastDel] += render.tagDel[0]; r += render.tagDel[1]; lastDel = -1;
+					if (line[i + 1] == '~') {//两个~才表示删除线
+						if (lastDel >= 0) {//前面出现过一次~~了,这个是收尾
+							if (r == '') { //表示新的子结果块列表才开始,~~包裹的内容为空,~~~~的情况,保留前面的两个~~
+								rList[lastDel] += '~~';
+							} else { //正常情况,输出删除线的文本
+								rList[lastDel] += render.tagDel[0];
+								r += render.tagDel[1];
+								lastDel = -1;
 							}
-						}else{//这是第一次出现~~标记,是个打头,记录一下并开启一个新的子结果块列表
-							lastDel = rList.push(r) - 1;r = '';
+						} else { //这是第一次出现~~标记,是个打头,记录一下并开启一个新的子结果块列表
+							lastDel = rList.push(r) - 1;
+							r = '';
 						}
 						i++;
-					}else r+='~';//只是一个普通的波浪线
+					} else {
+						r += '~';//只是一个普通的波浪线
+					}
 					break;
 				case '*':
 				case '_'://粗体斜体
 					//Markdown规范,*或_两边空格,则当作正常字符输出
-					if((line[i+1]==' ' || line[i+1]=='\t') && (line[i-1]==' ' || line[i-1]=='\t')){
-						r+=line[i];break;
+					if ((line[i + 1] == ' ' || line[i + 1] == '\t') && (line[i - 1] == ' ' || line[i - 1] == '\t')) {
+						r += line[i]; break;
 					}
 					//两个*或_在一起,表示粗体
 					if(line[i+1]==line[i]){
@@ -742,7 +745,7 @@
 					}else{//斜体
 						if(lastEm>=0){//这个是收尾
 							if(lastEmType != line[i]){//上次开头的字符与本次的不一样,当作正常字符输出
-								r+=line[i];break;	
+								r += line[i]; break;	
 							}
 							//一切正常输出斜体内容
 							rList[lastEm] += render.tagEm[0];
@@ -754,24 +757,22 @@
 					}
 					break;
 				case '>'://有可能是HTML注释结尾
-					if(i>=2 && line.slice(i-2,i)=='--')r+='-->';//HTML注释结尾
-					else r+='>';//否则当成>字符输出
+					if (i >= 2 && line.slice(i - 2, i) == '--') r += '-->'; //HTML注释结尾
+					else r += '>'; //否则当成>字符输出
 					break;
 				case '<'://可能是自动链接或自动邮箱或者是HTML标签或者干脆就是一个<字符
-					if(line.slice(i+1,i+4)=='!--'){r+='<!--';break;}//考虑一种特殊情况,HTML注释
-					
+					if (line.slice(i + 1, i + 4) == '!--') { r += '<!--'; break; }//考虑一种特殊情况,HTML注释
 					tmpBoolean = 1;//表示有可能是邮箱或URL
-					for(nextLoc=i+1;nextLoc<len;nextLoc++){//找到>在哪里
-						if(line[nextLoc]=='>')break;
-						if(line[nextLoc]==' '||line[nextLoc]=='\t')tmpBoolean=0;//出现空白字符了,不可能是邮箱或URL了
+					for (nextLoc = i + 1; nextLoc < len; nextLoc++){//找到>在哪里
+						if (line[nextLoc] == '>') break;
+						if (line[nextLoc] == ' ' || line[nextLoc] == '\t') tmpBoolean = 0;//出现空白字符了,不可能是邮箱或URL了
 					}
-					if(nextLoc >= len){r+='&lt;';break;}//都找不到>,那就转义输出吧
-					
-					tmpString = line.slice(i+1,nextLoc);//选出<>内的内容
-					if(tmpBoolean){//如果还有可能是 url 或 email
+					if (nextLoc >= len) { r += '&lt;'; break; }//都找不到>,那就转义输出吧
+					tmpString = line.slice(i + 1, nextLoc);//选出<>内的内容
+					if (tmpBoolean) {//如果还有可能是 url 或 email
 						if (regex.url.test(tmpString)) {//内容是URL
 							r += render.link(tmpString, '', tmpString);
-							i = nextLoc;break;
+							i = nextLoc; break;
 						}
 						if (regex.email.test(tmpString)) {//内容是邮箱
 							r += render.email(tmpString);
@@ -781,7 +782,7 @@
 					r+='<'//当作正常字符输出;
 					break;
 				case '!'://如果不是初判图片才输出
-					if(line[i+1]!='[') r+='!';break;
+					if (line[i + 1] != '[') r += '!'; break;
 				case '['://进入了可链接(Linkable)元素区块
 					//判断类型
 					if (line[i - 1] == '!' && (lastMean != rList.length || lastMeanOffset != i - 1)) linkType = 'i';//图片	
@@ -880,7 +881,7 @@
 			var list = footRefManager.getFootNoteList();
 			if (list.length == 0) return '';
 			var res = render.tagFootNote[0];
-			list.forEach(item => res += render.footNode(item.url, handlerInline(item.content, 0)));
+			list.forEach(item => res += render.footNote(item.url, handlerInline(item.content, 0)));
 			return res + render.tagFootNote[1];
 		}
 
