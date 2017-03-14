@@ -14,16 +14,14 @@
 	/**
 	 * @description 用于判断Markdown语句的正则表达式
 	 */
-	var regex = {
-		ul : /^[\*\-\+] +\S*/g,
-		ol : /^\d+\. +\S*/g,
-		delHTML : /<\/?[^<>]+>/g,
-		url : /^\w+:\/{2,3}\S+$/g,
-		email: /^[\w-]+@[\w-]+\.[\w\.-]+$/g,
-		replaceCRLF: /\r\n/g, 
-		splitLine: /[\r\n]/,
-		footRefDefine: /^\[([\^]?)(.+)\]\:\s+(.+)$/
-	};
+	var regex_ul = /^[\*\-\+] +\S*/g,
+		regex_ol = /^\d+\. +\S*/g,
+		regex_delHTML = /<\/?[^<>]+>/g,
+		regex_url = /^\w+:\/{2,3}\S+$/g,
+		regex_email = /^[\w-]+@[\w-]+\.[\w\.-]+$/g,
+		regex_replaceCRLF = /\r\n/g,
+		regex_splitLine = /[\r\n]/,
+		regex_footRefDefine = /^\[([\^]?)(.+)\]\:\s+(.+)$/;
 
 	/**
 	 * @description 1024长度的空格字符串
@@ -54,7 +52,7 @@
 			//如果式脚注就分配ID
 			if (isFootNote)
 				content.id = footNoteList.push(content);
-			content.url = render.footNoteName(content.id);
+			content.url = render.func.footNoteName(content.id);
 			referMap[name.toLowerCase()] = content;
 		};
 		this.get = name => referMap[name.toLowerCase()];
@@ -86,53 +84,71 @@
 	 * @description 用于渲染Markdown的类
 	 */
 	function ClassMdjsRenderer() {
-		this.tagHr = '<hr />';
-		this.tagBr = '<br />';
+		/**
+		 * @description 用于渲染的HTML标签
+		 */
+		this.tag = {
+			hr: '<hr />',
+			br: '<br />',
+			p: ['<p>', '</p>'],
 
-		this.tagP = ['<p>', '</p>'];
-		this.tagQuote = ['<blockquote>', '</blockquote>'];
-		this.tagDel = ['<del>', '</del>'];
-		this.tagStrong = ['<strong>', '</strong>'];
-		this.tagEm = ['<em>', '</em>'];
-		this.tagInlineCode = ['<code>', '</code>'];
-		this.tagCodeBlock =  ['<pre><code data-lang="$language">', '</code></pre>']
+			quote: ['<blockquote>', '</blockquote>'],
+			del: ['<del>', '</del>'],
+			strong: ['<strong>', '</strong>'],
+			em: ['<em>', '</em>'],
+			inlineCode: ['<code>', '</code>'],
 
-		this.tagList = ['<ul>', '</ul>'];
-		this.tagOrderList = ['<ol>', '</ol>'];
-		this.tagListItem = ['<li>', '</li>'];
-		
+			codeBlock: ['<pre><code data-lang="$language">', '</code></pre>'],
+			list: ['<ul>', '</ul>'],
+			orderList: ['<ol>', '</ol>'],
+			listItem: ['<li>', '</li>'],
 
-		this.tagTOC = ['<div class="md_toc">', '</div>'];
-		this.tagTOCList = ['<ol>','</ol>'];
-		this.tagTOCItem = ['<a href="#$uri"><li>', '</li></a>'];
+			toc: ['<div class="md_toc">', '</div>'],
+			tocList: ['<ol>','</ol>'],
+			tocItem: ['<a href="#$uri"><li>', '</li></a>'],
+			footNote: ['<div class="md_foot"><ol>', '</ol></div>'],
+		};
+		/**
+		 * @description 用于渲染的HTML生成函数
+		 */
+		this.func = {
+			heading: (level, name, content) =>
+			`<h${level} id="${name}" name="${name}">${content}</h${level}>`,
+			link: (uri, title, content) =>
+				`<a title="${escapedHTML(title)}" href="${encodeURI(uri)}">${content}</a>`,
+			email: email => `<a href="mailto:${email}">${email}</a>`,
+			image: (uri, title, altText) =>
+				`<img alt="${escapedHTML(altText)}" title="${escapedHTML(title)}" src="${encodeURI(uri)}" />`,
+			
+			table: (headContent, bodyContent) => 
+				`<table class="md_table"><thead>${headContent}</thead><tbody>${bodyContent}</tbody></table>`,
+			tableRow: (isHead, cols, align) => {
+				var result = '<tr>',
+					wrapper0 = isHead ? '<th style="text-align: {0}">' : '<td style="text-align: {0}">',
+					wrapper1 = isHead ? '</th>' : '</td>',
+					alignValues = ['left', 'center', 'right'];
+				for (var i = 0; i < cols.length; i++)
+					result += wrapper0.replace('{0}', alignValues[align[i]]) + cols[i] + wrapper1;
+				return result + '</tr>'
+			},
+
+			footNoteLink: (uri, title, content) =>
+				`<sup><a title="${escapedHTML(title)}" href="${encodeURI(uri)}">${content}</a></sup>`,
+			footNote: (name, content) => `<li name="${name}" id="${name}">${content}</li>`,
+			footNoteName: id => `markdown_foot_${id}`
+		};
 		
-		this.tagFootNote = ['<div class="md_foot"><ol>', '</ol></div>'];
-		
-		this.heading = (level, name, content) =>
-			`<h${level} id="${name}" name="${name}">${content}</h${level}>`;
-		this.link = (uri, title, content) =>
-			`<a title="${escapedHTML(title)}" href="${encodeURI(uri)}">${content}</a>`;
-		this.email = email => `<a href="mailto:${email}">${email}</a>`;
-		this.image = (uri, title, altText) =>
-			`<img alt="${escapedHTML(altText)}" title="${escapedHTML(title)}" src="${encodeURI(uri)}" />`;
-		this.footNoteLink = (uri, title, content) =>
-			`<sup><a title="${escapedHTML(title)}" href="${encodeURI(uri)}">${content}</a></sup>`;
-		this.table = (headContent, bodyContent) => 
-			`<table class="md_table"><thead>${headContent}</thead><tbody>${bodyContent}</tbody></table>`;
-		this.tableRow = (isHead, cols, align) => {
-			var result = '<tr>',
-				wrapper0 = isHead ? '<th style="text-align: {0}">' : '<td style="text-align: {0}">',
-				wrapper1 = isHead ? '</th>' : '</td>',
-				alignValues = ['left', 'center', 'right'];
-			for (var i = 0; i < cols.length; i++)
-				result += wrapper0.replace('{0}', alignValues[align[i]]) + cols[i] + wrapper1;
-			return result + '</tr>'
-		}
-		this.footNote = (name, content) => `<li name="${name}" id="${name}">${content}</li>`;
-		this.footNoteName = id => `markdown_foot_${id}`;
-		
-		var refLinkProviders = [];		
+		/**
+		 * @description 参考式提供器
+		 */
+		var refLinkProviders = [];
+		/**
+		 * @description 添加参考式提供器
+		 */
 		this.addRefLinkProvider = provider => refLinkProviders.push(provider);
+		/**
+		 * @description 解析参考式
+		 */
 		this._resolveRefLink = referName => {
 			for(var i = 0, result; i < refLinkProviders.length ; i++ )
 				if (result = refLinkProviders[i](referName))
@@ -140,10 +156,18 @@
 		};
 	}
 
-	function ClassMdjs() {
-
+	/**
+	 * 创建一个Markdown解析器的类
+	 * @param {Object} [customRender] 自定义的Markdown渲染器 
+	 */
+	function ClassMdjs(customRender) {
 		//Markdown内容渲染器
 		var render = new ClassMdjsRenderer();
+		if (customRender) render = customRender;
+		//用于 Markdown 渲染的 HTML 标签
+		var tag = render.tag;
+		//用于 Markdown 渲染的 HTML 生成函数
+		var tagFunc = render.func;
 
 		//参考式 脚标 管理器
 		var footRefManager = new ClassMdjsReferManager(render);
@@ -168,7 +192,7 @@
 				listItemStack = new ClassMdjsListItemStack();
 
 				//原始行
-				var rawLines = md.replace(regex.replaceCRLF, '\n').split(regex.splitLine),
+				var rawLines = md.replace(regex_replaceCRLF, '\n').split(regex_splitLine),
 					rawLinesLength = rawLines.length;
 				//去掉了参考式的行
 				var lines = [], line = '';
@@ -176,7 +200,7 @@
 				//寻找参考式
 				for (var i = 0; i < rawLinesLength; i++){
 					line = rawLines[i];
-					var part = line.trim().match(regex.footRefDefine);
+					var part = line.trim().match(regex_footRefDefine);
 					//不是脚标获得参考式 行
 					if (!part) {
 						lines.push(line);
@@ -189,7 +213,7 @@
 						for (var k = i + 1; k < rawLinesLength; k++ , i++) {
 							line = rawLines[k].trim();
 							if (!line) break;//空白行
-							if (line.match(regex.footRefDefine)) break;//下一个脚注或参考式
+							if (line.match(regex_footRefDefine)) break;//下一个脚注或参考式
 							content += '\n' + rawLines[k];
 						}
 						object = { title: part[2], content: content }
@@ -321,7 +345,7 @@
 				if(isThisLineInCodeBlock){
 					if(trimedLine=='```'){//代码结束了
 						isThisLineInCodeBlock = false;
-						resultMarkdown += render.tagCodeBlock[1];
+						resultMarkdown += tag.codeBlock[1];
 						continue;
 					}
 					resultMarkdown += (isThisLineInCodeBlock ? '\n' : '') + escapedHTML(lines[i]);
@@ -343,7 +367,7 @@
 				if (trimedLine.length == 0) {
 					//如果段落还没有结束了, 就结束当前段落然后输出</p>
 					if (!isParagraphFinished) {
-						resultMarkdown += render.tagP[1];
+						resultMarkdown += tag.p[1];
 						isParagraphFinished = true;
 					}
 					continue;
@@ -353,7 +377,7 @@
 				if (leftWhiteLength < 4) {
 					if (trimedLine.startsWith('```')) {//进入代码块
 						var lang = trimedLine.slice(3).trim();
-						resultMarkdown += render.tagCodeBlock[0].replace('$language', lang);
+						resultMarkdown += tag.codeBlock[0].replace('$language', lang);
 						isThisLineInCodeBlock = true;
 						continue;
 					}
@@ -370,8 +394,8 @@
 						//tocMark 给当前标题标记的 ID 和 name,为了能让TOC目录点击跳转
 						var tocMark = titleText = handlerInline(titleText, 0);
 						tocLevel[tocLen] = tmpHeaderLevel;
-						tocTitle[tocLen++] = tocMark = tocMark.trim().replace(regex.delHTML, '');
-						resultMarkdown += render.heading(tmpHeaderLevel, tocMark, titleText);
+						tocTitle[tocLen++] = tocMark = tocMark.trim().replace(regex_delHTML, '');
+						resultMarkdown += tagFunc.heading(tmpHeaderLevel, tocMark, titleText);
 						continue;
 					}
 					
@@ -394,12 +418,12 @@
 								//如果没有 > 开头的话就保留原来的字符串(防止丢失行首的空格)
 							quoteLines.push(tmpStr);
 						}
-						resultMarkdown += render.tagQuote[0] + handlerLines(quoteLines, true, options) + render.tagQuote[1];
+						resultMarkdown += tag.quote[0] + handlerLines(quoteLines, true, options) + tag.quote[1];
 						i = k - 1;
 						continue;
 					}
 					//横线
-					if (isCutLine(trimedLine)) { resultMarkdown += render.tagHr; continue; }
+					if (isCutLine(trimedLine)) { resultMarkdown += tag.hr; continue; }
 					
 					//目录
 					//记录当前位置, 在全部文档解析完后输出到这个位置
@@ -410,14 +434,14 @@
 						//两行表格语句确定表格结构
 						if (i < linesLength - 1 && (tbFmt = handlerTbFmt(lines[i + 1].trim(), tbRet.length)) != false) {
 							//表格头部
-							var tbHead = render.tableRow(true, tbRet, tbFmt);
+							var tbHead = tagFunc.tableRow(true, tbRet, tbFmt);
 							var tbBody = '';
 							for (var j = i + 2; j < linesLength; j++) {
 								if ((tbRet = handlerTbLine(lines[j].trim())) == false) break; //不是表格语句了
-								tbBody += render.tableRow(false, tbRet, tbFmt);
+								tbBody += tagFunc.tableRow(false, tbRet, tbFmt);
 							}
 							i = j - 1;
-							resultMarkdown += render.table(tbHead, tbBody);
+							resultMarkdown += tagFunc.table(tbHead, tbBody);
 							continue;
 						}
 					}
@@ -427,7 +451,7 @@
 					//代码块(需要检查上一行),普通文本
 					//代码块
 					if(i==0 || lines[i-1].trim().length == 0){
-						resultMarkdown += render.tagCodeBlock[0].replace('$language', lang);
+						resultMarkdown += tag.codeBlock[0].replace('$language', lang);
 						var space = '',endL = i;//space是为了中间的空白行,endl是为了保存代码最后有效行在哪
 						for(var j=i,ltab;j<linesLength;j++){
 							if(lines[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
@@ -436,7 +460,7 @@
 								escapedHTML(lines[j].trim());
 							space='',endL = j;//重置空白行和记录最后有效行
 						}
-						resultMarkdown += render.tagCodeBlock[1];
+						resultMarkdown += tag.codeBlock[1];
 						i=endL;
 						continue;
 					}
@@ -452,8 +476,8 @@
 						else if (nextLine[0] == '-') level = 2;
 						var tocMark = titleText = handlerInline(trimedLine,0);
 						tocLevel[tocLen]  = level;
-						tocTitle[tocLen++]= tocMark = tocMark.trim().replace(regex.delHTML,'');
-						resultMarkdown += render.heading(level, tocMark, titleText);
+						tocTitle[tocLen++]= tocMark = tocMark.trim().replace(regex_delHTML,'');
+						resultMarkdown += tagFunc.heading(level, tocMark, titleText);
 						i++;//跳过下一行
 						continue;
 					}
@@ -472,11 +496,11 @@
 				} else {
 					//新的段落开始<p>
 					if (isParagraphFinished)
-						tmpStr = render.tagP[0] + tmpStr;
+						tmpStr = tag.p[0] + tmpStr;
 					//如果解析选项要求强制换行 或 改行末尾含有至少两个空格要求(换行)
 					if (options.alwaysNewline ||
 						isThereAtLeast2spaceInRight(currentLine))
-						tmpStr += render.tagBr;
+						tmpStr += tag.br;
 					resultMarkdown += tmpStr;
 					isParagraphFinished = false;
 				}
@@ -500,25 +524,25 @@
 		 * @return {String} TOC 目录的HTML代码
 		 */
 		function handlerTOC(tocTitle, tocLevel) {
-			var res = render.tagTOC[0];
+			var res = tag.toc[0];
 			var levelStack = [], lastLevel;
 			var liHTML;
 			for (var i = 0; i < tocTitle.length; i++) {
-				liHTML = render.tagTOCItem[0].replace('$uri', tocTitle[i]) + tocTitle[i] + render.tagTOCItem[1];
+				liHTML = tag.tocItem[0].replace('$uri', tocTitle[i]) + tocTitle[i] + tag.tocItem[1];
 				if (levelStack.length == 0 || tocLevel[i] > lastLevel) {
-					res += render.tagTOCList[0] + liHTML;
+					res += tag.tocList[0] + liHTML;
 					levelStack.push(lastLevel = tocLevel[i]);
 				} else if (tocLevel[i] == lastLevel) {
 					res += liHTML;
 				} else {
-					res += render.tagTOCList[1];
+					res += tag.tocList[1];
 					levelStack.pop();
 					lastLevel = levelStack[levelStack.length - 1];
 					i--;
 				}
 			}
-			while (levelStack.length) res += render.tagTOCList[1], levelStack.pop();
-			return res + render.tagTOC[1];
+			while (levelStack.length) res += tag.tocList[1], levelStack.pop();
+			return res + tag.toc[1];
 		}
 
 		/**
@@ -528,8 +552,8 @@
 		 */
 		function isThisAListItemAndGetListType(str) {
 			if (isCutLine((str))) return 0;
-			if(str.search(regex.ol)!=-1)return 1;
-			if(str.search(regex.ul)!=-1)return 2;
+			if(str.search(regex_ol)!=-1)return 1;
+			if(str.search(regex_ul)!=-1)return 2;
 			return 0;
 		}
 			
@@ -542,25 +566,25 @@
 		 */
 		function handlerList(level, type, str) {
 			var topLevel = listItemStack.topLevel();//上一个列表的层次
-			var liHTML = render.tagListItem[0] + handlerInline(str, str.indexOf(' '), 0) + render.tagListItem[1];
+			var liHTML = tag.listItem[0] + handlerInline(str, str.indexOf(' '), 0) + tag.listItem[1];
 			var res = '';
 			if(level > topLevel){//上一个列表的___子列表___
 				listItemStack.push(level,type);
-				return (type == 1 ? render.tagOrderList : render.tagList)[0] + liHTML;
+				return (type == 1 ? tag.orderList : tag.list)[0] + liHTML;
 			}else if(level == topLevel){//上一个列表的___兄弟(并列)列表___
 				return liHTML;
 			}else{//上一个列表的___父列表___的___兄弟列表___
 				while(level<topLevel){//找到属于这个列表的兄弟列表
 					if (listItemStack.topType() == 1)//数字列表	
-						res += render.tagOrderList[1];
+						res += tag.orderList[1];
 					else//无序列表
-						res += render.tagList[1];
+						res += tag.list[1];
 					listItemStack.pop();
 					topLevel = listItemStack.topLevel();
 				}
 				if(topLevel==-1){//这个列表是最顶层的列表,即暂时没有兄弟列表,是一个新的列表集的开始
 					listItemStack.push(level,type);
-					return res + (type == 1 ? render.tagOrderList : render.tagList)[0] + liHTML;
+					return res + (type == 1 ? tag.orderList : tag.list)[0] + liHTML;
 				}else{
 					return res + liHTML;
 				}
@@ -575,9 +599,9 @@
 			var res = '';
 			while(listItemStack.topLevel()!=-1){
 				if (listItemStack.topType() == 1)//数字列表	
-					res += render.tagOrderList[1];
+					res += tag.orderList[1];
 				else//无序列表
-					res += render.tagList[1];
+					res += tag.list[1];
 				listItemStack.pop();
 			}
 			return res;
@@ -694,7 +718,7 @@
 					tmpNumber = tmpString.length; //tS记录行内代码包裹的标记,tI记录前者长度	
 					if ((nextLoc = line.indexOf(tmpString, i + tmpNumber)) == -1) r += tmpString; //如果往后找找不到可匹配的结束行内代码的标记,就正常输出
 					else { //找到了,输出行内代码
-						r += render.tagInlineCode[0] + escapedHTML(line.slice(i + tmpNumber, nextLoc)) + render.tagInlineCode[1];
+						r += tag.inlineCode[0] + escapedHTML(line.slice(i + tmpNumber, nextLoc)) + tag.inlineCode[1];
 						i = nextLoc;
 					}
 					i += tmpNumber - 1; //移动遍历光标
@@ -706,8 +730,8 @@
 							if (r == '') { //表示新的子结果块列表才开始,~~包裹的内容为空,~~~~的情况,保留前面的两个~~
 								rList[lastDel] += '~~';
 							} else { //正常情况,输出删除线的文本
-								rList[lastDel] += render.tagDel[0];
-								r += render.tagDel[1];
+								rList[lastDel] += tag.del[0];
+								r += tag.del[1];
 								lastDel = -1;
 							}
 						} else { //这是第一次出现~~标记,是个打头,记录一下并开启一个新的子结果块列表
@@ -732,8 +756,8 @@
 								r+=line[i++]+line[i];break;	
 							}
 							//一切正常输出加粗内容
-							rList[lastStrong] += render.tagStrong[0];
-							r += render.tagStrong[1]; lastStrong = -1;
+							rList[lastStrong] += tag.strong[0];
+							r += tag.strong[1]; lastStrong = -1;
 						}else{//这是开头
 							if(line[i+2]==line[i] && line[i+3]==line[i]){//四个连续的*或_,那就不解析前面两个,否则无法出现只想单纯表达四个*的效果
 								r+=line[i++]+line[i++];
@@ -748,8 +772,8 @@
 								r += line[i]; break;	
 							}
 							//一切正常输出斜体内容
-							rList[lastEm] += render.tagEm[0];
-							r += render.tagEm[1]; lastEm = -1;
+							rList[lastEm] += tag.em[0];
+							r += tag.em[1]; lastEm = -1;
 						}else{//这是开头
 							lastEm = rList.push(r) - 1;
 							r = '';lastEmType = line[i];
@@ -770,12 +794,12 @@
 					if (nextLoc >= len) { r += '&lt;'; break; }//都找不到>,那就转义输出吧
 					tmpString = line.slice(i + 1, nextLoc);//选出<>内的内容
 					if (tmpBoolean) {//如果还有可能是 url 或 email
-						if (regex.url.test(tmpString)) {//内容是URL
-							r += render.link(tmpString, '', tmpString);
+						if (regex_url.test(tmpString)) {//内容是URL
+							r += tagFunc.link(tmpString, '', tmpString);
 							i = nextLoc; break;
 						}
-						if (regex.email.test(tmpString)) {//内容是邮箱
-							r += render.email(tmpString);
+						if (regex_email.test(tmpString)) {//内容是邮箱
+							r += tagFunc.email(tmpString);
 							i = nextLoc;break;
 						}
 					}
@@ -811,7 +835,7 @@
 							if(linkType=='s'){//如果是脚注,那就直接输出了
 								tmpObject = footRefManager.get(linkContent);
 								if (tmpObject) {//该脚注信息是否存在
-									r += render.footNoteLink(tmpObject.url, tmpObject.title, tmpObject.id);
+									r += tagFunc.footNoteLink(tmpObject.url, tmpObject.title, tmpObject.id);
 									done = 1; i = j; j = len;
 								}
 								break;
@@ -840,9 +864,9 @@
 								}
 								linkURL = tmpObject.url;linkTitle = tmpObject.title || '';
 								if (linkType == 'i')//输出图片
-									r += render.image(linkURL, linkTitle, linkContent);
+									r += tagFunc.image(linkURL, linkTitle, linkContent);
 								else//输出链接
-									r += render.link(linkURL, linkTitle, handlerInline(linkContent, 0));	
+									r += tagFunc.link(linkURL, linkTitle, handlerInline(linkContent, 0));	
 								done = 1; i = nextLoc;
 							}
 							j=len;
@@ -880,9 +904,9 @@
 		function handlerFoot(){
 			var list = footRefManager.getFootNoteList();
 			if (list.length == 0) return '';
-			var res = render.tagFootNote[0];
-			list.forEach(item => res += render.footNote(item.url, handlerInline(item.content, 0)));
-			return res + render.tagFootNote[1];
+			var res = tag.footNote[0];
+			list.forEach(item => res += tagFunc.footNote(item.url, handlerInline(item.content, 0)));
+			return res + tag.footNote[1];
 		}
 
 	}/* </ClassMdjs> */
