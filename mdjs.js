@@ -133,7 +133,7 @@
 			},
 
 			footNoteLink: (uri, title, content) =>
-				`<sup><a title="${escapedHTML(title)}" href="${encodeURI(uri)}">${content}</a></sup>`,
+				`<sup><a title="${escapedHTML(title)}" href="#${encodeURI(uri)}">${content}</a></sup>`,
 			footNote: (name, content) => `<li name="${name}" id="${name}">${content}</li>`,
 			footNoteName: id => `markdown_foot_${id}`
 		};
