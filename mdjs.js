@@ -185,48 +185,44 @@
 			options = options || {};
 			md = typeof md == 'string' ? md : String(md);
 			
-			try {
-				//初始化参考式管理器
-				footRefManager = new ClassMdjsReferManager(render);
-				//初始化列表元素栈
-				listItemStack = new ClassMdjsListItemStack();
+			//初始化参考式管理器
+			footRefManager = new ClassMdjsReferManager(render);
+			//初始化列表元素栈
+			listItemStack = new ClassMdjsListItemStack();
 
-				//原始行
-				var rawLines = md.replace(regex_replaceCRLF, '\n').split(regex_splitLine),
-					rawLinesLength = rawLines.length;
-				//去掉了参考式的行
-				var lines = [], line = '';
+			//原始行
+			var rawLines = md.replace(regex_replaceCRLF, '\n').split(regex_splitLine),
+				rawLinesLength = rawLines.length;
+			//去掉了参考式的行
+			var lines = [], line = '';
 
-				//寻找参考式
-				for (var i = 0; i < rawLinesLength; i++){
-					line = rawLines[i];
-					var part = line.trim().match(regex_footRefDefine);
-					//不是脚标获得参考式 行
-					if (!part) {
-						lines.push(line);
-						continue;
-					}
-					var object, isFootNote = false, content = '';
-					if (isFootNote = (part[1] == '^')) { //如果是脚注
-						content = part[3];
-						//查找接下来的行是否仍然属于该脚注内容
-						for (var k = i + 1; k < rawLinesLength; k++ , i++) {
-							line = rawLines[k].trim();
-							if (!line) break;//空白行
-							if (line.match(regex_footRefDefine)) break;//下一个脚注或参考式
-							content += '\n' + rawLines[k];
-						}
-						object = { title: part[2], content: content }
-					}else{ //参考式
-						object = analyzeTitleableLink(part[3].trim());
-					}
-					footRefManager.set(part[1] + part[2], object, isFootNote);
+			//寻找参考式
+			for (var i = 0; i < rawLinesLength; i++){
+				line = rawLines[i];
+				var part = line.trim().match(regex_footRefDefine);
+				//不是脚标获得参考式 行
+				if (!part) {
+					lines.push(line);
+					continue;
 				}
-				
-				return handlerLines(lines, false, options) + handlerFoot(); //内容最后如果有脚注就输出脚注内容
-			} catch (e) {
-				console.error(e.stack);
+				var object, isFootNote = false, content = '';
+				if (isFootNote = (part[1] == '^')) { //如果是脚注
+					content = part[3];
+					//查找接下来的行是否仍然属于该脚注内容
+					for (var k = i + 1; k < rawLinesLength; k++ , i++) {
+						line = rawLines[k].trim();
+						if (!line) break;//空白行
+						if (line.match(regex_footRefDefine)) break;//下一个脚注或参考式
+						content += '\n' + rawLines[k];
+					}
+					object = { title: part[2], content: content }
+				}else{ //参考式
+					object = analyzeTitleableLink(part[3].trim());
+				}
+				footRefManager.set(part[1] + part[2], object, isFootNote);
 			}
+			
+			return handlerLines(lines, false, options) + handlerFoot(); //内容最后如果有脚注就输出脚注内容
 		}
 
 		/**
