@@ -1,16 +1,30 @@
 {
-  "name": "mdjs",
-  "version": "0.4.0",
-  "description": "Js的Markdown解析器",
-  "main": "",
+  "name": "md-js",
+  "version": "1.0.0",
+  "description": "A markdown parser",
+  "main": "mdjs.js",
   "dependencies": {},
   "devDependencies": {
-    "gulp-rename": "^1.2.2",
-    "gulp-uglify": "^1.5.1"
+    "mocha": "*",
+    "uglify-js": "*",
+    "colors": "*",
+    "fs-extra": "*",
+    "babel-plugin-transform-es2015-arrow-functions": "*",
+    "babel-plugin-transform-es2015-template-literals": "*",
+    "babel-core": "*"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hangxingliu/mdjs"
+  },
+  "keywords": [
+    "markdown",
+    "parser"
+  ],
   "scripts": {
-    "test": "gulp"
+    "build": "node ./build.js",
+    "test": "mocha ./test/src/*.js"
   },
-  "author": "liuyue",
-  "license": "Apache License Version 2.0"
+  "author": "LiuYue",
+  "license": "Apache-2.0"
 }
