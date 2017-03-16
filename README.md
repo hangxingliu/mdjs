@@ -1,13 +1,10 @@
 # Mdjs
 
 > Mdjs 是一个用 Javascript 写的 轻量级的的 Markdown 解析器   
-> **演示效果**可以查看,基于 Mdjs 写的在线 Markdown 编辑器`Mdjs.editor`   
-> Mdjs.editor项目地址:&nbsp;&nbsp;[GitOsc][MdjsEditorOSC]&nbsp;&nbsp; [Github][MdjsEditorGithub]  
-> **Mdjs.editor项目演示**: [效果演示][MdjsEditorDemo]
-
-[MdjsEditor OSC]: http://git.oschina.net/voyageliu/mdjs.editor
-[MdjsEditor Github]: https://github.com/hangxingliu/mdjs.editor
-[MdjsEditor Demo]: http://hangxingliu.github.io/mdjs.editor/
+> **Demo**: <http://hangxingliu.github.io/mdjs.editor/>
+> **Mdjs.editor**: 
+> [Github](https://github.com/hangxingliu/mdjs.editor)
+> [Git@OSC](http://git.oschina.net/voyageliu/mdjs.editor)
 
 ---
 
