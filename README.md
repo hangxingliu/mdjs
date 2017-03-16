@@ -1,71 +1,122 @@
 # Mdjs
 
-> Mdjs是一个易用的轻量级的Js的Markdown文件解析器  
-> **演示效果**可以查看,基于Mdjs写的在线Markdown编辑器`Mdjs.editor`  
-> Mdjs.editor项目地址:&nbsp;&nbsp;[GitOsc][mdjseditorOSC]&nbsp;&nbsp; [Github][mdjseditorGithub]  
-> **Mdjs.editor项目演示**: [效果演示][mdjseditordemo]
+> Mdjs 是一个用 Javascript 写的 轻量级的的 Markdown 解析器   
+> **演示效果**可以查看,基于 Mdjs 写的在线 Markdown 编辑器`Mdjs.editor`   
+> Mdjs.editor项目地址:&nbsp;&nbsp;[GitOsc][MdjsEditorOSC]&nbsp;&nbsp; [Github][MdjsEditorGithub]  
+> **Mdjs.editor项目演示**: [效果演示][MdjsEditorDemo]
 
-[mdjseditorOSC]: http://git.oschina.net/voyageliu/mdjs.editor
-[mdjseditorGithub]: https://github.com/hangxingliu/mdjs.editor
-[mdjseditordemo]: http://hangxingliu.github.io/mdjs.editor/
+[MdjsEditor OSC]: http://git.oschina.net/voyageliu/mdjs.editor
+[MdjsEditor Github]: https://github.com/hangxingliu/mdjs.editor
+[MdjsEditor Demo]: http://hangxingliu.github.io/mdjs.editor/
+
 ---
-`2016年01月12日`
 
-Version `0.4 Dev`
+## 目前版本
 
-欢迎大家参考学习,也望大家能够对本解析器中的不足或错误进行指正批评.
+### 1.0.0 **beta**
 
-开发者: **刘越(HangxingLiu)**
-![我的微博:](http://www.sinaimg.cn/blog/developer/wiki/LOGO_16x16.png)[@航行刘](http://weibo.com/chinavl)
+2017-03-16
 
+- 修复了许多解析的Bug
+- 将Mdjs的功能全部封装成了类, 且支持了在Node.js开发中使用
+- 支持了自定义渲染器(针对自己的需要定制HTML输出,以及自定的参考式提供器)
+- 支持了`alwaysNewline`解析参数, 以至于可以支持行末空格换行 也可以支持回车换行
+- 添加了`typescript`模板文件, 使得在使用时IDE可以有更好的代码提示与补全
+- 去掉了默认的错误try/catch, 让开发者可以自己捕获错误对象
+- 优化了大量代码
 
-[TOC]
+更多更新日志请参阅: [CHANGELOG.md](document/CHANGELOG.md)
 
-## 开源声明
+## 使用
 
-Mdjs遵循[Apache Licence 2.0](LICENSE)
-
-> 允许使用在商业应用中,允许通过修改来满足实际需求(但需要在被修改的文件中说明).
-
-## 使用方法
+### Web前端
 
 ``` html
 	<!-- 不依赖其他任何库,仅一个脚本文件即可 -->
 	<script src="mdjs.min.js" type="text/javascript" charset="utf-8"></script>
-	
-	<!-- 注意:如果需要对解析出的HTML附带上更多的样式,可以参考或引用mdcss.css样式表文件(下面一句) -->
-	<link rel="stylesheet" type="text/css" href="mdcss.css"/>
 ```
 
 ``` javascript
-	var html = Mdjs.md2html(markdown);
+	//方法一
+	var html = Mdjs.md2html(markdownText);
+	//方法二
+	var mdjs = new Mdjs();
+	var html = mdjs.md2html(markdownText);
 ```
+
+### Node.js
+
+``` bash
+	npm i md-js
+```
+
+``` javascript
+	//方法一
+	var Mdjs = require('md-js');
+	var html = Mdjs.md2html(markdownText);
+	//方法二
+	var Mdjs = require('md-js').Mdjs;
+	var mdjs = new Mdjs();
+	var html = mdjs.md2html(markdownText);
+```
+
+### 配置解析选项
+
+``` javascript
+	var mdjs = new Mdjs();
+	var html = mdjs.md2html(markdownText, {
+		//markdown 文本中表示段落的每行行末都加入 换行标签<br/>
+		alwaysNewline: false
+	});
+```
+
+### 自定义渲染规则
+
+``` javascript
+	//创建自定义渲染器类
+	var myRender = new Mdjs.MdjsRenderer();
+	//配置自定义引用区块的HTML标签
+	myRender.tag.quote = ['<div class="blockquote">', '</div>'],
+	//配置自定义邮箱部分的 HTML 生成函数
+	myRender.func.email = function(email){
+		return '<a href="mailto:' + email + '">' + email + '</a>';
+	};
+	//自定义链接参考式
+	myRender.addRefLinkProvider(function(referName) {
+		return { url: 'https://github.com/' + referName };
+	});
+	var mdjs = new Mdjs(myRender);
+	var html = mdjs.md2html(markdownText);
+```
+
+更多自定义渲染规则请参阅: [CUSTOM_RENDER.md](document/CUSTOM_RENDER.md)
+
 
 ## 语法支持
 
-目前用的广泛使用的Markdown语法都能被正常解析
+目前广泛使用的的Markdown语法都能被解析,
+额外支持的语法还有:
 
-> **注意**:流程图,时序图,LaTeX公式的解析将不会在我的Mdjs主线中版本中出现,
-因为这个解析器追求的是简洁与轻量
-**当然,你也可以通过使用其他库对解析结果内的各类图表公式进行解析显示**
+- `脚注`
+- `表格`
+- `[toc]`
 
-## 演示文件
+暂不支持的语法和功能:
 
-- `demo/demo.html` : 简单的Markdown显示样例
-- ~~`demo/demoEditor.html` : 简单的Markdown实时预览编辑器样例~~
-	- **已废弃**:编辑器实现可以参考`Mdjs.editor`项目,项目地址见当前文档头部
+- `流程图,时序图和LaTeX公式`
+- `代码块的高亮`
 
----
-- `Example.md` :用来测试解析器的演示Markdown文件
+## 开发维护手册
 
----
-- `mdcss.css` :一个简单的用于显示Markdown解析成的HTML的样式表
+参考学习或开发维护可参考文档:
+[DEVELOP_MANUAL.md](document/DEVELOP_MANUAL.md)
 
-## 注意事项
+## 作者
 
-1. 本解析器不会对代码块进行高亮处理,但是开发者可以轻松地为解析出来的`<code></code>`绑上高亮组件以达到高亮显示的目的
-2. 这个解析器没有自带的Markdown编辑器功能,可以参考`Mdjs.editor`(项目地址见当前文档头部)(一款基于Mdjs的在线Markdown编辑器)的实现
+**刘越(Hangxingliu)**   
+[Git@OSC](https://git.oschina.net/voyageliu)   
+[Github](https://github.com/hangxingliu)
 
-## 开发手册
+## 开源协议
 
-[开发手册](http://git.oschina.net/voyageliu/mdjs/wikis/Developer)
+[Apache Licence 2.0](LICENSE)

@@ -3,13 +3,6 @@
 	"configurations": [
 		{
 			"type": "node",
-			"request": "launch",
-			"name": "Launch overall test script",
-			"program": "${workspaceRoot}/test/overall.js",
-			"outFiles": []
-		},
-		{
-			"type": "node",
 			"request": "attach",
 			"name": "Attach to process",
 			"address": "localhost",

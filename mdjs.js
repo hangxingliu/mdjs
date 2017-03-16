@@ -1,6 +1,6 @@
 /**
  * @name MdJs
- * @version 1.0 Developing... 2017/03/03
+ * @version 1.0.0 beta 2017/03/16
  * @author LiuYue(hangxingliu)
  * @description Mdjs 是一个轻量级的 Javascript 的 Markdown文件解析器
  */
@@ -114,7 +114,7 @@
 		 */
 		this.func = {
 			heading: (level, name, content) =>
-			`<h${level} id="${name}" name="${name}">${content}</h${level}>`,
+				`<h${level} id="${name}" name="${name}">${content}</h${level}>`,
 			link: (uri, title, content) =>
 				`<a title="${escapedHTML(title)}" href="${encodeURI(uri)}">${content}</a>`,
 			email: email => `<a href="mailto:${email}">${email}</a>`,
