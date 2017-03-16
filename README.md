@@ -25,7 +25,7 @@
 - 去掉了默认的错误try/catch, 让开发者可以自己捕获错误对象
 - 优化了大量代码
 
-更多更新日志请参阅: [CHANGELOG.md](document/CHANGELOG.md)
+更多更新日志请参阅: [CHANGELOG.md](documents/CHANGELOG.md)
 
 ## 使用
 
@@ -89,7 +89,7 @@
 	var html = mdjs.md2html(markdownText);
 ```
 
-更多自定义渲染规则请参阅: [CUSTOM_RENDER.md](document/CUSTOM_RENDER.md)
+更多自定义渲染规则请参阅: [CUSTOM_RENDER.md](documents/CUSTOM_RENDER.md)
 
 
 ## 语法支持
@@ -109,7 +109,7 @@
 ## 开发维护手册
 
 参考学习或开发维护可参考文档:
-[DEVELOP_MANUAL.md](document/DEVELOP_MANUAL.md)
+[DEVELOP_MANUAL.md](documents/DEVELOP_MANUAL.md)
 
 ## 作者
 
