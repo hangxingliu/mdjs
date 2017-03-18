@@ -8,11 +8,11 @@ repositories=$(\
 # IFS=$'\n'
 # for repo in $repositories
 # do
-# 	echo "Pushing \"$repo\"..."
+# 	echo "Pushing to repository \"$repo\"..."
 #     eval "git push $repo --all"
 # done
 
 while read -r repo; do
-	echo "Pushing \"$repo\"..."
+	echo "Pushing to repository \"$repo\"..."
     eval "git push $repo --all"
 done <<< "$repositories"
