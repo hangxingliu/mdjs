@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+repositories=$(\
+	git remote -v | \
+	awk '{print $1}' | \
+	uniq )
+
+# IFS=$'\n'
+# for repo in $repositories
+# do
+# 	echo "Pushing \"$repo\"..."
+#     eval "git push $repo --all"
+# done
+
+while read -r repo; do
+	echo "Pushing \"$repo\"..."
+    eval "git push $repo --all"
+done <<< "$repositories"
