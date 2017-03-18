@@ -6,6 +6,9 @@
         "node": true,
         "mocha": true
     },
+    "globals": {
+        "Mdjs": true
+    },
     "parserOptions": {
         "ecmaFeatures": {
             "jsx": true

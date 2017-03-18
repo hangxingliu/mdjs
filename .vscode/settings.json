@@ -1,3 +1,11 @@
 {
-	"eslint.enable": true
+	"eslint.enable": true,
+	"files.exclude": {
+		"**/.git": true,
+		"**/.svn": true,
+		"**/.hg": true,
+		"**/.DS_Store": true,
+		"mdjs.min.js": true,
+		"test/generated_test_files": true
+	}
 }

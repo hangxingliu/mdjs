@@ -1,11 +1,9 @@
 
 const TEST_ENV = `${__dirname}/../env`;
 
-require('colors');
-
-let Mdjs = require('../..').Mdjs,
-	fs = require('fs-extra'),
+let fs = require('fs-extra'),
 	htmlWrapper = fs.readFileSync(`${TEST_ENV}/all_in_one_wrapper.html`, 'utf8');
+
 
 let markdown = fs.readFileSync(`${TEST_ENV}/all_in_one.md`, 'utf8');
 

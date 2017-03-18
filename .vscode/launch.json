@@ -3,6 +3,12 @@
 	"configurations": [
 		{
 			"type": "node",
+			"request": "launch",
+			"name": "Launch Test Program",
+			"program": "${workspaceRoot}/test/start.js"
+		},
+		{
+			"type": "node",
 			"request": "attach",
 			"name": "Attach to process",
 			"address": "localhost",

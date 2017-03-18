@@ -5,3 +5,4 @@ typescript
 cSpell.json
 TODO.md
 test/env/dist
+test/generated_test_files
