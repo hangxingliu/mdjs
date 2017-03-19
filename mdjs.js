@@ -329,7 +329,8 @@
 			var tocLen = 0;//记录目录一共有多少个节点
 			
 			var isParagraphFinished = true;//文本段落是否已经结束, 是否已经插入过了</p>
-
+			var isLastLineEndWithNewLine = false;//文本段落中上一行是否需要换行(结尾有两及个以上的空白字符)
+			
 			var tmpStr = '', tmpStr2 = '';
 			var tmpHeaderLevel = 0;
 
@@ -339,8 +340,8 @@
 				trimedLine = currentLine.trim();
 				
 				//目前正在处理代码,或者代码结尾
-				if(isThisLineInCodeBlock){
-					if(trimedLine=='```'){//代码结束了
+				if (isThisLineInCodeBlock) {
+					if (trimedLine == '```') {//代码结束了
 						isThisLineInCodeBlock = false;
 						resultMarkdown += tag.codeBlock[1];
 						continue;
@@ -354,17 +355,17 @@
 				
 				//列表行
 				var l = isThisAListItemAndGetListType(trimedLine);
-				if(l!=0){
+				if (l != 0) {
 					resultMarkdown += handlerList(leftWhiteLength,l,trimedLine);
 					continue;
 				}
-				resultMarkdown+= handlerListEnd();
+				resultMarkdown += handlerListEnd();
 				
 				//空白行
 				if (trimedLine.length == 0) {
 					//如果段落还没有结束了, 就结束当前段落然后输出</p>
 					if (!isParagraphFinished) {
-						resultMarkdown += tag.p[1];
+						resultMarkdown += (isLastLineEndWithNewLine ? tag.br : '') + tag.p[1];
 						isParagraphFinished = true;
 					}
 					continue;
@@ -450,15 +451,15 @@
 					if(i==0 || lines[i-1].trim().length == 0){
 						resultMarkdown += tag.codeBlock[0].replace(regex_code_language, '');
 						var space = '',endL = i;//space是为了中间的空白行,endl是为了保存代码最后有效行在哪
-						for(var j=i,ltab;j<linesLength;j++){
-							if(lines[j].trim().length==0){space+='\n';continue;}//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
-							if((ltab = howManyWhiteInLeft(lines[j]))<4)break;//空白小于一个Tab键了,退出代码块
+						for (var j = i, ltab; j < linesLength; j++){
+							if (lines[j].trim().length == 0) { space += '\n'; continue; }//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
+							if ((ltab = howManyWhiteInLeft(lines[j])) < 4) break;//空白小于一个Tab键了,退出代码块
 							resultMarkdown += space + (j == i ? '' : '\n') + getSpaceString(ltab - 2) +//去掉开头多余的空白字符
 								escapedHTML(lines[j].trim());
-							space='',endL = j;//重置空白行和记录最后有效行
+							space = '', endL = j;//重置空白行和记录最后有效行
 						}
 						resultMarkdown += tag.codeBlock[1];
-						i=endL;
+						i = endL;
 						continue;
 					}
 				}
@@ -492,12 +493,17 @@
 					resultMarkdown += tmpStr;
 				} else {
 					//新的段落开始<p>
-					if (isParagraphFinished)
+					if (isParagraphFinished) {
 						tmpStr = tag.p[0] + tmpStr;
-					//如果解析选项要求强制换行 或 改行末尾含有至少两个空格要求(换行)
-					if (options.alwaysNewline ||
-						isThereAtLeast2spaceInRight(currentLine))
-						tmpStr += tag.br;
+						isLastLineEndWithNewLine = false;
+					}
+					//如果解析选项要求强制换行(**并且不是段落首行**) 或 上一行末尾含有至少两个空格要求(换行)
+					//	就在此行前面加上换行符
+					if ((options.alwaysNewline && !isParagraphFinished) ||
+						isLastLineEndWithNewLine) 
+						resultMarkdown += tag.br;
+					//判断这行行末是否有换行标记(至少两个空白字符)
+					isLastLineEndWithNewLine = isThereAtLeast2spaceInRight(currentLine);
 					resultMarkdown += tmpStr;
 					isParagraphFinished = false;
 				}
@@ -507,8 +513,8 @@
 
 			//如果段落没有结束, 就补全</p>
 			if (!isParagraphFinished) {
-				resultMarkdown += tag.p[1];
-				isParagraphFinished = true; 
+				resultMarkdown += (isLastLineEndWithNewLine ? tag.br : '') + tag.p[1];
+				isParagraphFinished = true;
 			} 
 
 			//如果需要输出TOC目录

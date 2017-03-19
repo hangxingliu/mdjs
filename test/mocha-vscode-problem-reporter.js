@@ -11,7 +11,7 @@ exports = module.exports = (
 			console.log(test.title);
 			console.log(err.stack);
 			let obj = String(err.stack).match(/^\s*at\s+Context\.it\s+\((.+):(\d+):(\d+)\)/m);
-			obj && console.log(`error: ${obj[1]}|${obj[2]}|${obj[3]}|<<test>> ${test.title}`);
+			obj && console.log(`error: ${obj[1]}|${obj[2]}|${obj[3]}| [ TEST NAME ] ${test.title}`);
 			obj && console.log(`error: ${obj[1]}|${obj[2]}|${obj[3]}|${err.message}`);
 		}
 	}
