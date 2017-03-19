@@ -505,6 +505,12 @@
 				//循环结束,一行处理完成
 			}
 
+			//如果段落没有结束, 就补全</p>
+			if (!isParagraphFinished) {
+				resultMarkdown += tag.p[1];
+				isParagraphFinished = true; 
+			} 
+
 			//如果需要输出TOC目录
 			if (tocPosition != -1)	
 				resultMarkdown = resultMarkdown.slice(0, tocPosition) +
