@@ -7,5 +7,13 @@
 		"**/.DS_Store": true,
 		"mdjs.min.js": true,
 		"test/generated_test_files": true
+	},
+	"triggerTaskOnSave.on": true,
+	"triggerTaskOnSave.tasks": {
+		"build": [], 
+		"test": [
+			"test/_src/*.js",
+			"mdjs.js"
+		]
 	}
 }
