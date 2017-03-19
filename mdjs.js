@@ -332,6 +332,7 @@
 			var isLastLineEndWithNewLine = false;//文本段落中上一行是否需要换行(结尾有两及个以上的空白字符)
 			
 			var tmpStr = '', tmpStr2 = '';
+			var analyzeInLineInfo = {};
 			var tmpHeaderLevel = 0;
 
 			for (var i = 0; i < linesLength; i++){
@@ -482,14 +483,12 @@
 				}
 				
 				//这下真的是普通的一行了
-				tmpStr = handlerInline(currentLine, 0);
+				analyzeInLineInfo = {};
+				tmpStr = handlerInline(currentLine, 0, analyzeInLineInfo);
 				tmpStr2 = tmpStr.trim();
 
 				//判断当行是否有且只有一个图片标签, 且在段落外. 如果是, 则优化输出. 不将这个图片包裹在一个新的段落(<p></p>)内
-				if (isParagraphFinished &&
-					tmpStr2.startsWith('<img ') &&
-					tmpStr2.endsWith('/>') &&
-					tmpStr2.indexOf('<img ', 1) == -1) {
+				if (isParagraphFinished && analyzeInLineInfo.onlyOneImg ) {
 					resultMarkdown += tmpStr;
 				} else {
 					//新的段落开始<p>
@@ -575,7 +574,7 @@
 		 */
 		function handlerList(level, type, str) {
 			var topLevel = listItemStack.topLevel();//上一个列表的层次
-			var liHTML = tag.listItem[0] + handlerInline(str, str.indexOf(' '), 0) + tag.listItem[1];
+			var liHTML = tag.listItem[0] + handlerInline(str, str.indexOf(' ')) + tag.listItem[1];
 			var res = '';
 			if(level > topLevel){//上一个列表的___子列表___
 				listItemStack.push(level,type);
@@ -683,9 +682,10 @@
 		/**
 		 * @description 处理一行Markdown语句(不包括行修饰符, 例如#标题, - 列表...)
 		 * @param {String} line 去掉了头部的Markdown语句
-		 * @param {Number} start 这个Markdown语句解析的起始点,默认为0
+		 * @param {Number} [start] 这个Markdown语句解析的起始点,默认为0
+		 * @param {Object} [moreInfo] 如果需要更多的信息,可以传入一个空对象(类似,引用/指针形式)进来以获取
 		 */
-		function handlerInline(line, start) {
+		function handlerInline(line, start, moreInfo) {
 			/*
 			结果 = 结果块列表 合并   return rList.join('');
 			之所以使用结果块列表, 是因为可以方便的在 某个结果块的尾部插入<strong><em><del>标签
@@ -709,8 +709,10 @@
 			var linkType; //可链接元素的类型:'s':Sup;'i':Image;'':Link
 			var linkContent, linkURL, linkTitle;
 
+			var imgCount = 0;//行内图片张数统计
+
 			var tmpString, tmpNumber, tmpObject, tmpBoolean; //临时变量
-			
+
 			//遍历语句
 			for (var i = (start || 0); i < len; i++){
 				switch (line[i]) {
@@ -872,10 +874,15 @@
 									tmpObject = analyzeTitleableLink(titleableLink);
 								}
 								linkURL = tmpObject.url;linkTitle = tmpObject.title || '';
-								if (linkType == 'i')//输出图片
-									r += tagFunc.image(linkURL, linkTitle, linkContent);
-								else//输出链接
-									r += tagFunc.link(linkURL, linkTitle, handlerInline(linkContent, 0));	
+								if (linkType == 'i') {//输出图片
+									//这里之所以将图片单独作为一个结果块,是因为这样下面可以统计是否当前行只有一个图片
+									rList.push(r);
+									rList.push(tagFunc.image(linkURL, linkTitle, linkContent));
+									r = '';
+									imgCount++;
+								} else {//输出链接
+									r += tagFunc.link(linkURL, linkTitle, handlerInline(linkContent, 0));
+								}
 								done = 1; i = nextLoc;
 							}
 							j=len;
@@ -902,6 +909,15 @@
 			if (lastStrong != -1) rList[lastStrong] += lastStType + lastStType;
 			if (lastEm != -1) rList[lastEm] += lastEmType;
 			
+			//判断是否当前行有且只有一张图片
+			if (imgCount == 1) {
+				//统计结果块的数量
+				var _blockCount = 0;
+				for (var listI in rList)
+					_blockCount += rList[listI].trim() ? 1 : 0;
+				if (_blockCount == 1 && moreInfo)
+					moreInfo.onlyOneImg = true;
+			}
 			return rList.join('');
 		}		
 
