@@ -18,7 +18,7 @@
 		regex_ol = /^\d+\. +\S*/g,
 		regex_delHTML = /<\/?[^<>]+>/g,
 		regex_url = /^\w+:\/{2,3}\S+$/g,
-		regex_email = /^[\w-]+@[\w-]+\.[\w\.-]+$/g,
+		regex_email = /^\S+@\S+\.\S+$/g,
 		regex_replaceCRLF = /\r\n/g,
 		regex_splitLine = /[\r\n]/,
 		regex_footRefDefine = /^\[([\^]?)(.+)\]\:\s+(.+)$/,
@@ -713,7 +713,7 @@
 			
 			//遍历语句
 			for (var i = (start || 0); i < len; i++){
-				switch(line[i]){
+				switch (line[i]) {
 				case '\\'://转义字符\打头
 					//如果\后面的字符是可转义字符才转义
 					if (specialCharacters.indexOf(line[i + 1]) >= 0)
