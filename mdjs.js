@@ -1,6 +1,6 @@
 /**
  * @name MdJs
- * @version 1.0.0 beta 2017/03/16
+ * @version 1.0.1 beta 2017/03/19
  * @author LiuYue(hangxingliu)
  * @description Mdjs 是一个轻量级的 Javascript 的 Markdown文件解析器
  */

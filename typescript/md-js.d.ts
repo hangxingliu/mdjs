@@ -5,12 +5,12 @@ declare module 'md-js' {
 	export var Mdjs: ClassMdjsStatic;
 	export var MdjsRenderer: ClassMdjsRendererStatic;
 
-	export function md2html(md: String | Buffer | Object, options?: MdjsParseOptions | Object): String;
+	export function md2html(md: String | Buffer | Object, options?: MdjsParseOptions): String;
 	export function escapedHTML(str: String): String;
 }
 
 class ClassMdjs {
-	md2html(md: String | Buffer | Object, options?: MdjsParseOptions | Object): String;
+	md2html(md: String | Buffer | Object, options?: MdjsParseOptions): String;
 	renderer: ClassMdjsRenderer;
 }
 
@@ -18,7 +18,7 @@ interface ClassMdjsStatic {
 	new (customRender?: ClassMdjsRenderer): ClassMdjs;
 	prototype: ClassMdjs;
 
-	md2html(md: String | Buffer | Object, options?: MdjsParseOptions | Object): String;
+	md2html(md: String | Buffer | Object, options?: MdjsParseOptions): String;
 	escapedHTML(str: String): String;
 
 	MdjsRenderer: ClassMdjsRendererStatic;
