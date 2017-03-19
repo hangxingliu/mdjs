@@ -797,11 +797,11 @@
 					if (nextLoc >= len) { r += '&lt;'; break; }//都找不到>,那就转义输出吧
 					tmpString = line.slice(i + 1, nextLoc);//选出<>内的内容
 					if (tmpBoolean) {//如果还有可能是 url 或 email
-						if (regex_url.test(tmpString)) {//内容是URL
+						if (tmpString.match(regex_url)) {//内容是URL
 							r += tagFunc.link(tmpString, '', tmpString);
 							i = nextLoc; break;
 						}
-						if (regex_email.test(tmpString)) {//内容是邮箱
+						if (tmpString.match(regex_email)) {//内容是邮箱
 							r += tagFunc.email(tmpString);
 							i = nextLoc;break;
 						}
