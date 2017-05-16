@@ -1,31 +1,32 @@
 {
-	"name": "md-js",
-	"version": "1.0.1",
-	"description": "A markdown parser",
-	"main": "mdjs.js",
-	"dependencies": {},
-	"devDependencies": {
-		"babel-core": "*",
-		"babel-plugin-transform-es2015-arrow-functions": "*",
-		"babel-plugin-transform-es2015-template-literals": "*",
-		"colors": "*",
-		"fs-extra": "*",
-		"mocha": "*",
-		"should": "^11.2.1",
-		"uglify-js": "*"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/hangxingliu/mdjs"
-	},
-	"keywords": [
-		"markdown",
-		"parser"
-	],
-	"scripts": {
-		"build": "node ./build.js",
-		"test": "node ./test/start.js"
-	},
-	"author": "LiuYue",
-	"license": "Apache-2.0"
+  "name": "md-js",
+  "version": "1.0.1",
+  "description": "A markdown parser",
+  "main": "mdjs.js",
+  "dependencies": {},
+  "devDependencies": {
+    "babel-core": "*",
+    "babel-plugin-transform-es2015-arrow-functions": "*",
+    "babel-plugin-transform-es2015-template-literals": "*",
+    "cheerio": "^0.22.0",
+    "colors": "*",
+    "fs-extra": "*",
+    "mocha": "*",
+    "should": "^11.2.1",
+    "uglify-js": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hangxingliu/mdjs"
+  },
+  "keywords": [
+    "markdown",
+    "parser"
+  ],
+  "scripts": {
+    "build": "node ./build.js",
+    "test": "node ./test/start.js"
+  },
+  "author": "LiuYue",
+  "license": "Apache-2.0"
 }

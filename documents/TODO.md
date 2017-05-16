@@ -19,12 +19,14 @@
 - [x] ~~添加只有一对中括号的参考式链接,例如: this is [wiki: github]~~
 - [x] 修复一行只有一张图片的检测(因为如果使用了自定义渲染器改变了标签, 就失效了)
 - [x] 1.0.1 beta
+- [x] 标题去除无关字符
+- [x] CodeBlocks多余的换行
 - [ ] 添加开头注释的支持
 - [ ] 编写针对局部Markdown语法的单元测试
 	- [x] 尖括号表示 URL 和 EMAIL 测试
 	- [x] 单行Markdown内容测试
 	- [ ] 图片测试(有待完善)
-- [ ] 完成 build.js 生成 sourcemaps 的逻辑
 - [ ] 添加针对Bootstrap#{3,4}的自定义渲染类
+- [ ] build.js 改成browserify打包(能生成sourcemaps)
 - [ ] 添加链接处理器
 - [ ] 完成英文版的文档

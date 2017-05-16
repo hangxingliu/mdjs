@@ -17,6 +17,7 @@
 	var regex_ul = /^[\*\-\+] +\S*/g,
 		regex_ol = /^\d+\. +\S*/g,
 		regex_delHTML = /<\/?[^<>]+>/g,
+		regex_delNonWordChar = /\W+/g,
 		regex_url = /^\w+:\/{2,3}\S+$/g,
 		regex_email = /^\S+@\S+\.\S+$/g,
 		regex_replaceCRLF = /\r\n/g,
@@ -301,6 +302,15 @@
 		}
 
 		/**
+		 * @description 将一个字符串转换成合法的HTML属性值(只保留[a-zA-Z0-9_])
+		 * @param {string} str 字符串
+		 * @returns {string}
+		 */
+		function toLegalAttributeValue(str) {
+			return str.replace(regex_delNonWordChar, '_').replace(/^_/, '').replace(/_$/, '');
+		}
+
+		/**
 		 * @description 将多个 Markdown 语句解析成可显示的HTML
 		 * 
 		 * @param {Array<String>} lines 多行Markdown语句组成的数组
@@ -313,7 +323,7 @@
 
 			var linesLength = lines.length; // markdown行数
 			
-			var isThisLineInCodeBlock = 0;//目前处理的这行是不是代码,大于等于1就是
+			var lineNumberInCodeBlock = 0;//目前这行在代码块中的行号(0表示不在代码块中, 1表示代码块中的第一行)
 			
 			var currentLine = '';//目前循环正在处理着的行
 			var trimedLine = '';//目前行去掉两端空白字符后的字符串
@@ -324,8 +334,11 @@
 			var tbFmt = [];//存放表格每列的对齐格式
 			
 			var tocPosition = -1;//哪儿要输出目录结构
-			var tocTitle = [];//记录目录每个节点的标题
-			var tocLevel = [];//记录目录每个节点的层次
+
+			var tocTitle = [],//记录目录每个节点的标题
+				tocUri = [],//记录目录每隔节点跳转到URI(#HASH)
+				tocLevel = [];//记录目录每个节点的层次
+			
 			var tocLen = 0;//记录目录一共有多少个节点
 			
 			var isParagraphFinished = true;//文本段落是否已经结束, 是否已经插入过了</p>
@@ -341,13 +354,14 @@
 				trimedLine = currentLine.trim();
 				
 				//目前正在处理代码,或者代码结尾
-				if (isThisLineInCodeBlock) {
+				if (lineNumberInCodeBlock) {
 					if (trimedLine == '```') {//代码结束了
-						isThisLineInCodeBlock = false;
+						lineNumberInCodeBlock = 0;
 						resultMarkdown += tag.codeBlock[1];
 						continue;
 					}
-					resultMarkdown += (isThisLineInCodeBlock ? '\n' : '') + escapedHTML(lines[i]);
+					//如果是第二行起, 就在行前加入换行符
+					resultMarkdown += (lineNumberInCodeBlock++ > 1 ? '\n' : '') + escapedHTML(currentLine);
 					continue;
 				}
 				
@@ -377,7 +391,7 @@
 					if (trimedLine.startsWith('```')) {//进入代码块
 						var lang = trimedLine.slice(3).trim();
 						resultMarkdown += tag.codeBlock[0].replace(regex_code_language, lang);
-						isThisLineInCodeBlock = true;
+						lineNumberInCodeBlock = 1;
 						continue;
 					}
 					
@@ -389,12 +403,13 @@
 						for (; cutEnd > tmpHeaderLevel; cutEnd--)
 							if (trimedLine[cutEnd] != '#') //为了去掉结尾的#号
 								break;
-						var titleText = trimedLine.slice(tmpHeaderLevel, cutEnd + 1);
+						var headerText = trimedLine.slice(tmpHeaderLevel, cutEnd + 1);
 						//tocMark 给当前标题标记的 ID 和 name,为了能让TOC目录点击跳转
-						var tocMark = titleText = handlerInline(titleText, 0);
+						var headerName = headerText = handlerInline(headerText, 0);
 						tocLevel[tocLen] = tmpHeaderLevel;
-						tocTitle[tocLen++] = tocMark = tocMark.trim().replace(regex_delHTML, '');
-						resultMarkdown += tagFunc.heading(tmpHeaderLevel, tocMark, titleText);
+						tocTitle[tocLen] = headerName = headerName.trim().replace(regex_delHTML, '');
+						tocUri[tocLen++] = headerName = toLegalAttributeValue(headerName);
+						resultMarkdown += tagFunc.heading(tmpHeaderLevel, headerName, headerText);
 						continue;
 					}
 					
@@ -473,10 +488,11 @@
 						var level = 3;//默认三级
 						if (nextLine[0] == '=') level = 1;
 						else if (nextLine[0] == '-') level = 2;
-						var tocMark = titleText = handlerInline(trimedLine,0);
+						var headerName = headerText = handlerInline(trimedLine,0);
 						tocLevel[tocLen]  = level;
-						tocTitle[tocLen++]= tocMark = tocMark.trim().replace(regex_delHTML,'');
-						resultMarkdown += tagFunc.heading(level, tocMark, titleText);
+						tocTitle[tocLen]= headerName = headerName.trim().replace(regex_delHTML,'');
+						tocUri[tocLen++] = headerName = toLegalAttributeValue(headerName);
+						resultMarkdown += tagFunc.heading(level, headerName, headerText);
 						i++;//跳过下一行
 						continue;
 					}
@@ -515,11 +531,12 @@
 				resultMarkdown += (isLastLineEndWithNewLine ? tag.br : '') + tag.p[1];
 				isParagraphFinished = true;
 			} 
+			
 
 			//如果需要输出TOC目录
 			if (tocPosition != -1)	
 				resultMarkdown = resultMarkdown.slice(0, tocPosition) +
-					handlerTOC(tocTitle, tocLevel, tocLen) +
+					handlerTOC(tocTitle, tocUri, tocLevel, tocLen) +
 					resultMarkdown.slice(tocPosition);
 			
 			return resultMarkdown;
@@ -528,15 +545,16 @@
 		/**
 		 * 生成一个TOC目录的代码
 		 * @param {Array<String>} tocTitle 目录节点的标题
+		 * @param {Array<String>} tocUri 目录节点的连接
 		 * @param {Array<Number>} tocLevel 目录节点的层次
 		 * @return {String} TOC 目录的HTML代码
 		 */
-		function handlerTOC(tocTitle, tocLevel) {
+		function handlerTOC(tocTitle, tocUri, tocLevel) {
 			var res = tag.toc[0];
 			var levelStack = [], lastLevel;
 			var liHTML;
 			for (var i = 0; i < tocTitle.length; i++) {
-				liHTML = tag.tocItem[0].replace('$uri', tocTitle[i]) + tocTitle[i] + tag.tocItem[1];
+				liHTML = tag.tocItem[0].replace('$uri', tocUri[i]) + tocTitle[i] + tag.tocItem[1];
 				if (levelStack.length == 0 || tocLevel[i] > lastLevel) {
 					res += tag.tocList[0] + liHTML;
 					levelStack.push(lastLevel = tocLevel[i]);
