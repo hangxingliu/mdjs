@@ -8,12 +8,23 @@
 		"mdjs.min.js": true,
 		"test/generated_test_files": true
 	},
-	"triggerTaskOnSave.on": true,
-	"triggerTaskOnSave.tasks": {
-		"build": [], 
-		"test": [
-			"test/_src/*.js",
-			"mdjs.js"
-		]
-	}
+    "cSpell.words": [
+        "Mdjs",
+        "Titleable",
+        "blockquote",
+        "changelog",
+        "endl",
+        "hangxingliu",
+        "imgs",
+        "intellisense",
+        "ltab",
+        "mailto",
+        "mkdirs",
+        "nbsp",
+        "polyfill",
+        "thiz",
+        "toc",
+        "trimed",
+        "typeof"
+    ]
 }
