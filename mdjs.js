@@ -52,9 +52,10 @@
 		//脚注content为{url:xxx,title:xxx,id:xxx,content:xxx}
 		this.set = (name, content, isFootNote) => {
 			//如果式脚注就分配ID
-			if (isFootNote)
+			if (isFootNote) {
 				content.id = footNoteList.push(content);
-			content.url = render.func.footNoteName(content.id);
+				content.url = render.func.footNoteName(content.id);
+			}
 			referMap[name.toLowerCase()] = content;
 		};
 		this.get = name => referMap[name.toLowerCase()];
@@ -202,7 +203,7 @@
 			for (var i = 0; i < rawLinesLength; i++){
 				line = rawLines[i];
 				var part = line.trim().match(regex_footRefDefine);
-				//不是脚标获得参考式 行
+				//不是脚标或参考式 行
 				if (!part) {
 					lines.push(line);
 					continue;
@@ -240,7 +241,7 @@
 			if (!match) return ret;
 			ret.url = match[1];
 			//去掉链接标题的包裹符号
-			var title = match[2], c1 = title[0], c2 = title[title-1];
+			var title = match[2], c1 = title[0], c2 = title[title.length-1];
 			if (title.length >= 2)
 				if ( ((c1 == '\'' || c1 == '"') && c1 == c2) ||
 						(c1 == '(' && c2 == ')') )
