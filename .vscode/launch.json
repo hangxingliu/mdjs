@@ -4,16 +4,17 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch Test Program",
-			"program": "${workspaceRoot}/test/start.js"
-		},
-		{
-			"type": "node",
-			"request": "attach",
-			"name": "Attach to process",
-			"address": "localhost",
-			"port": 5858,
-			"outFiles": []
+			"name": "Mocha Tests",
+			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"args": [
+				"-u",
+				"tdd",
+				"--timeout",
+				"999999",
+				"--colors",
+				"${workspaceFolder}/test/src"
+			],
+			"internalConsoleOptions": "openOnSessionStart"
 		}
 	]
 }

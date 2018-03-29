@@ -4,9 +4,7 @@
 		"**/.git": true,
 		"**/.svn": true,
 		"**/.hg": true,
-		"**/.DS_Store": true,
-		"mdjs.min.js": true,
-		"test/generated_test_files": true
+		"**/.DS_Store": true
 	},
     "cSpell.words": [
         "Mdjs",

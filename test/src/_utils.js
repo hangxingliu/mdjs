@@ -1,3 +1,4 @@
+//@ts-check
 /// <reference path="_utils_type.d.ts" />
 let cheerio = require('cheerio');
 
@@ -8,7 +9,7 @@ let cheerio = require('cheerio');
 function validateHTML(html) {
 	let $ = cheerio.load(html);
 	/**
-	 * @param {string} selector 
+	 * @param {string} selector
 	 * @returns {ValidateHTMLSelectResult}
 	 */
 	function select(selector) { return new SelectResult($(selector), $) }

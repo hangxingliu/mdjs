@@ -1,3 +1,7 @@
+//@ts-check
+require('colors');
+require('should');
+let Mdjs = require('../..').Mdjs;
 
 describe('render tag <p> and <br/>', () => {
 	it('#should be wrap <p>', () => {
@@ -7,16 +11,16 @@ describe('render tag <p> and <br/>', () => {
 	it('#should has <br/>', () => {
 		Mdjs.md2html('the**lazy**dog\nDog')
 			.should.be.equal('<p>the<strong>lazy</strong>dogDog</p>');
-		
+
 		Mdjs.md2html('the**lazy**dog  \nDog')
 			.should.be.equal('<p>the<strong>lazy</strong>dog  <br />Dog</p>');
-		
+
 		Mdjs.md2html('the**lazy**dog\nDog', { alwaysNewline: true })
 			.should.be.equal('<p>the<strong>lazy</strong>dog<br />Dog</p>');
-				
+
 		Mdjs.md2html('the**lazy**dog\nDog\n\nNew paragraph', { alwaysNewline: true })
 			.should.be.equal('<p>the<strong>lazy</strong>dog<br />Dog</p><p>New paragraph</p>');
-		
+
 		Mdjs.md2html('the**lazy**dog\nDog  \n\nNew paragraph')
 			.should.be.equal('<p>the<strong>lazy</strong>dogDog  <br /></p><p>New paragraph</p>');
 	});

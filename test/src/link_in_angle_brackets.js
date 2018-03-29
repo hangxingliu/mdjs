@@ -1,6 +1,11 @@
+//@ts-check
 /**
  * such as <https://github.com> but not <div>
  */
+
+require('colors');
+require('should');
+let Mdjs = require('../..').Mdjs;
 
 var testURL = [
 	'http://www.github.com',

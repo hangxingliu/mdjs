@@ -1,3 +1,7 @@
+//@ts-check
+require('colors');
+require('should');
+let Mdjs = require('../..').Mdjs;
 
 const TEST_ENV = `${__dirname}/../env`;
 
@@ -13,20 +17,20 @@ describe('whole file test', () => {
 	it('#all in one markdown document to HTML', () => {
 		let mdjs = new Mdjs();
 
-		mdjs.render.func.table = (headContent, bodyContent) => 
+		mdjs.render.func.table = (headContent, bodyContent) =>
 			`<table class="table table-striped"><thead>${headContent}</thead><tbody>${bodyContent}</tbody></table>`,
 			mdjs.render.tag.codeBlock = [
 				'<div class="card my-2"><div class="card-block"><h6 class="card-subtitle text-muted">$language</h6>' +
 				'<pre><code>',
 				'</code></pre></div></div>'],
-			
+
 		//Add wikipedia link provider
 		mdjs.render.addRefLinkProvider(
 			name => name.startsWith('wiki:') ?
 				`https://en.wikipedia.org/wiki/${name.slice(5).replace(/\s+/g, '_')}` :
 				null);
-		
-		fs.writeFileSync(`${TEST_ENV}/dist/all_in_one.html`, 
+
+		fs.writeFileSync(`${TEST_ENV}/dist/all_in_one.html`,
 			htmlWrapper.replace('{{ output }}', mdjs.md2html(markdown)));
 	});
 
@@ -39,7 +43,7 @@ describe('whole file test', () => {
 			name => name.startsWith('wiki:') ?
 				`https://en.wikipedia.org/wiki/${name.slice(5).replace(/\s+/g, '_')}` :
 				null);
-		
+
 		fs.writeFileSync(`${TEST_ENV}/dist/all_in_one`,mdjs.md2html(markdown));
 	});
 
@@ -70,7 +74,7 @@ function getMdjsCliRender() {
 		tocItem: ['', ''],
 		footNote: ['===============\n', '===============\n'],
 	},
-		
+
 	render.func = {
 		heading: (level, name, content) => `${content.bold.cyan}:\n`,
 		link: (uri, title, content) => `[${content.bold.white}](${uri.underline.white})`,
@@ -86,6 +90,6 @@ function getMdjsCliRender() {
 		footNote: (name, content) => `| ${content}`,
 		footNoteName: id => `${id}`
 	};
-	
+
 	return render;
 }
