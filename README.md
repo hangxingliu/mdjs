@@ -47,61 +47,61 @@
 ### Web前端
 
 ``` html
-	<!-- 不依赖其他任何库,仅一个脚本文件即可 -->
-	<script src="mdjs.min.js" type="text/javascript" charset="utf-8"></script>
+<!-- 不依赖其他任何库,仅一个脚本文件即可 -->
+<script src="mdjs.min.js" type="text/javascript" charset="utf-8"></script>
 ```
 
 ``` javascript
-	//方法一
-	var html = Mdjs.md2html(markdownText);
-	//方法二
-	var mdjs = new Mdjs();
-	var html = mdjs.md2html(markdownText);
+//方法一
+var html = Mdjs.md2html(markdownText);
+//方法二
+var mdjs = new Mdjs();
+var html = mdjs.md2html(markdownText);
 ```
 
 ### Node.js
 
 ``` bash
-	npm i md-js
+npm i md-js
 ```
 
 ``` javascript
-	//方法一
-	var Mdjs = require('md-js');
-	var html = Mdjs.md2html(markdownText);
-	//方法二
-	var Mdjs = require('md-js').Mdjs;
-	var mdjs = new Mdjs();
-	var html = mdjs.md2html(markdownText);
+//方法一
+var Mdjs = require('md-js');
+var html = Mdjs.md2html(markdownText);
+//方法二
+var Mdjs = require('md-js').Mdjs;
+var mdjs = new Mdjs();
+var html = mdjs.md2html(markdownText);
 ```
 
 ### 配置解析选项
 
 ``` javascript
-	var mdjs = new Mdjs();
-	var html = mdjs.md2html(markdownText, {
-		//markdown 文本中表示段落的每行行末都加入 换行标签<br/>
-		alwaysNewline: false
-	});
+var mdjs = new Mdjs();
+var html = mdjs.md2html(markdownText, {
+	//markdown 文本中表示段落的每行行末都加入 换行标签<br/>
+	alwaysNewline: false
+});
 ```
 
 ### 自定义渲染规则
 
 ``` javascript
-	//创建自定义渲染器类
-	var myRender = new Mdjs.MdjsRenderer();
-	//配置自定义引用区块的HTML标签
-	myRender.tag.quote = ['<div class="blockquote">', '</div>'],
-	//配置自定义邮箱部分的 HTML 生成函数
-	myRender.func.email = function(email){
-		return '<a href="mailto:' + email + '">' + email + '</a>';
-	};
-	//自定义链接参考式
-	myRender.addRefLinkProvider(function(referName) {
-		return { url: 'https://github.com/' + referName };
-	});
-	var mdjs = new Mdjs(myRender);
-	var html = mdjs.md2html(markdownText);
+//创建自定义渲染器类
+var myRender = new Mdjs.MdjsRenderer();
+//配置自定义引用区块的HTML标签
+myRender.tag.quote = ['<div class="blockquote">', '</div>'],
+//配置自定义邮箱部分的 HTML 生成函数
+myRender.func.email = function(email){
+	return '<a href="mailto:' + email + '">' + email + '</a>';
+};
+//自定义链接参考式
+myRender.addRefLinkProvider(function(referName) {
+	return { url: 'https://github.com/' + referName };
+});
+var mdjs = new Mdjs(myRender);
+var html = mdjs.md2html(markdownText);
 ```
 
 更多自定义渲染规则请参阅: [CUSTOM_RENDER.md](documents/CUSTOM_RENDER.md)

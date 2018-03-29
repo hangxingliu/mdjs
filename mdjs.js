@@ -63,7 +63,7 @@
 
 	/**
 	 * @description 用于处理列表项的 栈类
-	 */	
+	 */
 	function ClassMdjsListItemStack() {
 		var levelStack = [],
 			typeStack = [],
@@ -81,7 +81,7 @@
 			stackLength = levelStack.length;
 		};
 	}
-	
+
 	/**
 	 * @description 用于渲染Markdown的类
 	 */
@@ -121,8 +121,8 @@
 			email: email => `<a href="mailto:${email}">${email}</a>`,
 			image: (uri, title, altText) =>
 				`<img alt="${escapedHTML(altText)}" title="${escapedHTML(title)}" src="${encodeURI(uri)}" />`,
-			
-			table: (headContent, bodyContent) => 
+
+			table: (headContent, bodyContent) =>
 				`<table class="md_table"><thead>${headContent}</thead><tbody>${bodyContent}</tbody></table>`,
 			tableRow: (isHead, cols, align) => {
 				var result = '<tr>',
@@ -139,7 +139,7 @@
 			footNote: (name, content) => `<li name="${name}" id="${name}">${content}</li>`,
 			footNoteName: id => `markdown_foot_${id}`
 		};
-		
+
 		/**
 		 * @description 参考式提供器
 		 */
@@ -160,7 +160,7 @@
 
 	/**
 	 * 创建一个Markdown解析器的类
-	 * @param {Object} [customRender] 自定义的Markdown渲染器 
+	 * @param {Object} [customRender] 自定义的Markdown渲染器
 	 */
 	function ClassMdjs(customRender) {
 		//Markdown内容渲染器
@@ -179,14 +179,14 @@
 		/**
 		 * @description 将一个 Markdown 文本解析为可显示的HTML
 		 * @param {String} md Markdown文本
-		 * @param {MdjsParseOptions|Object} options 解析选项
+		 * @param {MdjsParseOptions|Object} [options] 解析选项
 		 * @return {String} HTML
 		 */
 		this.md2html = function (md, options) {
 			//处理默认参数
 			options = options || {};
 			md = typeof md == 'string' ? md : String(md);
-			
+
 			//初始化参考式管理器
 			footRefManager = new ClassMdjsReferManager(render);
 			//初始化列表元素栈
@@ -223,7 +223,7 @@
 				}
 				footRefManager.set(part[1] + part[2], object, isFootNote);
 			}
-			
+
 			return handlerLines(lines, false, options) + handlerFoot(); //内容最后如果有脚注就输出脚注内容
 		}
 
@@ -243,7 +243,7 @@
 			var title = match[2], c1 = title[0], c2 = title[title-1];
 			if (title.length >= 2)
 				if ( ((c1 == '\'' || c1 == '"') && c1 == c2) ||
-						(c1 == '(' && c2 == ')') )	
+						(c1 == '(' && c2 == ')') )
 					title = title.slice(1, -1);
 			ret.title = title;
 			return ret;
@@ -284,14 +284,14 @@
 		 * @description 判断这行markdown是否为标题行, 如果是则返回标题的层级数(1-8), 否则返回false
 		 * @param {String} trimedStr 一个已经执行了trim的字符串
 		 * @returns {Boolean|Number}
-		 */		
+		 */
 		function isThisLineHeaderAndGetLevel(trimedStr) {
-			for (var j = 0; j < trimedStr.length; j++)	
-				if (trimedStr[j] != '#')	
+			for (var j = 0; j < trimedStr.length; j++)
+				if (trimedStr[j] != '#')
 					break;
 			return j ? j : false;
 		}
-		
+
 		/**
 		 * @description 一句字符串右侧是否有至少2个空格字符(表示需要换一个新的行)
 		 * @param {String} str 一句字符串
@@ -312,7 +312,7 @@
 
 		/**
 		 * @description 将多个 Markdown 语句解析成可显示的HTML
-		 * 
+		 *
 		 * @param {Array<String>} lines 多行Markdown语句组成的数组
 		 * @param {Boolean} inBq (可选,默认false)解析的是否为Blockquote内的内容
 		 * @param {MdjsParseOptions|Object} options 解析选项
@@ -322,37 +322,37 @@
 			var resultMarkdown = '';
 
 			var linesLength = lines.length; // markdown行数
-			
+
 			var lineNumberInCodeBlock = 0;//目前这行在代码块中的行号(0表示不在代码块中, 1表示代码块中的第一行)
-			
+
 			var currentLine = '';//目前循环正在处理着的行
 			var trimedLine = '';//目前行去掉两端空白字符后的字符串
 
 			var leftWhiteLength = 0;//当前行左端的空格字符数量,//1个Tab=4个空格
-			
+
 			var tbRet = [];//存放表格行解析出来的列数组
 			var tbFmt = [];//存放表格每列的对齐格式
-			
+
 			var tocPosition = -1;//哪儿要输出目录结构
 
 			var tocTitle = [],//记录目录每个节点的标题
 				tocUri = [],//记录目录每隔节点跳转到URI(#HASH)
 				tocLevel = [];//记录目录每个节点的层次
-			
+
 			var tocLen = 0;//记录目录一共有多少个节点
-			
+
 			var isParagraphFinished = true;//文本段落是否已经结束, 是否已经插入过了</p>
 			var isLastLineEndWithNewLine = false;//文本段落中上一行是否需要换行(结尾有两及个以上的空白字符)
-			
+
 			var tmpStr = '', tmpStr2 = '';
 			var analyzeInLineInfo = {};
 			var tmpHeaderLevel = 0;
 
 			for (var i = 0; i < linesLength; i++){
 
-				currentLine = lines[i];				
+				currentLine = lines[i];
 				trimedLine = currentLine.trim();
-				
+
 				//目前正在处理代码,或者代码结尾
 				if (lineNumberInCodeBlock) {
 					if (trimedLine == '```') {//代码结束了
@@ -364,10 +364,10 @@
 					resultMarkdown += (lineNumberInCodeBlock++ > 1 ? '\n' : '') + escapedHTML(currentLine);
 					continue;
 				}
-				
+
 				//计算行前空格数
 				leftWhiteLength = howManyWhiteInLeft(currentLine);
-				
+
 				//列表行
 				var l = isThisAListItemAndGetListType(trimedLine);
 				if (l != 0) {
@@ -375,7 +375,7 @@
 					continue;
 				}
 				resultMarkdown += handlerListEnd();
-				
+
 				//空白行
 				if (trimedLine.length == 0) {
 					//如果段落还没有结束了, 就结束当前段落然后输出</p>
@@ -385,7 +385,7 @@
 					}
 					continue;
 				}
-				
+
 				//没有Tab键在行前
 				if (leftWhiteLength < 4) {
 					if (trimedLine.startsWith('```')) {//进入代码块
@@ -394,7 +394,7 @@
 						lineNumberInCodeBlock = 1;
 						continue;
 					}
-					
+
 					//是标题吗?多少个标题
 					tmpHeaderLevel = isThisLineHeaderAndGetLevel(trimedLine);
 					//是标题
@@ -412,7 +412,7 @@
 						resultMarkdown += tagFunc.heading(tmpHeaderLevel, headerName, headerText);
 						continue;
 					}
-					
+
 					//是引用区块 >
 					if (trimedLine[0] == '>' && trimedLine.length > 1) {
 						var quoteLines = [];//存放需要区块引用的行
@@ -438,11 +438,11 @@
 					}
 					//横线
 					if (isCutLine(trimedLine)) { resultMarkdown += tag.hr; continue; }
-					
+
 					//目录
 					//记录当前位置, 在全部文档解析完后输出到这个位置
 					if (trimedLine == '[TOC]') { tocPosition = resultMarkdown.length; continue; }
-					
+
 					//表格
 					if ((tbRet = handlerTbLine(trimedLine)) != false) { //可能是表格
 						//两行表格语句确定表格结构
@@ -459,7 +459,7 @@
 							continue;
 						}
 					}
-					
+
 				}else{
 					//虽然空格数大于了4,但是还是有可能:
 					//代码块(需要检查上一行),普通文本
@@ -479,7 +479,7 @@
 						continue;
 					}
 				}
-				
+
 				//普通文本正常的一行
 				//真的是上面注释的那样吗?其实如果它的下一行是---或===的话,那这一行就是标题行了
 				if (i + 1 < linesLength) {
@@ -497,7 +497,7 @@
 						continue;
 					}
 				}
-				
+
 				//这下真的是普通的一行了
 				analyzeInLineInfo = {};
 				tmpStr = handlerInline(currentLine, 0, analyzeInLineInfo);
@@ -515,7 +515,7 @@
 					//如果解析选项要求强制换行(**并且不是段落首行**) 或 上一行末尾含有至少两个空格要求(换行)
 					//	就在此行前面加上换行符
 					if ((options.alwaysNewline && !isParagraphFinished) ||
-						isLastLineEndWithNewLine) 
+						isLastLineEndWithNewLine)
 						resultMarkdown += tag.br;
 					//判断这行行末是否有换行标记(至少两个空白字符)
 					isLastLineEndWithNewLine = isThereAtLeast2spaceInRight(currentLine);
@@ -530,18 +530,18 @@
 			if (!isParagraphFinished) {
 				resultMarkdown += (isLastLineEndWithNewLine ? tag.br : '') + tag.p[1];
 				isParagraphFinished = true;
-			} 
-			
+			}
+
 
 			//如果需要输出TOC目录
-			if (tocPosition != -1)	
+			if (tocPosition != -1)
 				resultMarkdown = resultMarkdown.slice(0, tocPosition) +
 					handlerTOC(tocTitle, tocUri, tocLevel, tocLen) +
 					resultMarkdown.slice(tocPosition);
-			
+
 			return resultMarkdown;
 		}
-		
+
 		/**
 		 * 生成一个TOC目录的代码
 		 * @param {Array<String>} tocTitle 目录节点的标题
@@ -582,7 +582,7 @@
 			if(str.search(regex_ul)!=-1)return 2;
 			return 0;
 		}
-			
+
 		/**
 		 * @description 处理一行Markdown列表语句
 		 * @param {Object} level 列表语句前面有多少个空格/列表的层次
@@ -601,7 +601,7 @@
 				return liHTML;
 			}else{//上一个列表的___父列表___的___兄弟列表___
 				while(level<topLevel){//找到属于这个列表的兄弟列表
-					if (listItemStack.topType() == 1)//数字列表	
+					if (listItemStack.topType() == 1)//数字列表
 						res += tag.orderList[1];
 					else//无序列表
 						res += tag.list[1];
@@ -624,7 +624,7 @@
 		function handlerListEnd(){
 			var res = '';
 			while(listItemStack.topLevel()!=-1){
-				if (listItemStack.topType() == 1)//数字列表	
+				if (listItemStack.topType() == 1)//数字列表
 					res += tag.orderList[1];
 				else//无序列表
 					res += tag.list[1];
@@ -632,7 +632,7 @@
 			}
 			return res;
 		}
-	
+
 		/**
 		 * @description 解析表格格式行,即为表格第二行,格式说明(0:左对齐,1:居中,2:右对齐)
 		 * @param {String} tStr trim()过的语句字符串
@@ -695,7 +695,7 @@
 		 */
 		function getSpaceString(len){
 			return len <= 0 ? '' : space1024String.slice(0,len);
-		}		
+		}
 
 		/**
 		 * @description 处理一行Markdown语句(不包括行修饰符, 例如#标题, - 列表...)
@@ -708,13 +708,13 @@
 			结果 = 结果块列表 合并   return rList.join('');
 			之所以使用结果块列表, 是因为可以方便的在 某个结果块的尾部插入<strong><em><del>标签
 			*/
-			
+
 			var len = line.length; //text的长度
 			var rList = []; //返回结果块列表
 			var r = ''; //返回结果中最新的一条子结果
 			//上一次转义了的字符所在结果块列表中的哪一行(或者说当时结果块列表有多少行了),和那行的偏移量
 			var lastMean = -1, lastMeanOffset = -1;
-			
+
 			//上一次出现<strong><i><del>分别是在哪个结果块列表的末尾
 			var lastStrong = -1;
 			var lastEm = -1;
@@ -741,10 +741,10 @@
 						lastMeanOffset = ++i; //++i为了移动到下一位
 					r += line[i];
 					break;
-						
+
 				case '`'://行内代码
 					tmpString = (line[i + 1] == '`') ? '``' : '`';
-					tmpNumber = tmpString.length; //tS记录行内代码包裹的标记,tI记录前者长度	
+					tmpNumber = tmpString.length; //tS记录行内代码包裹的标记,tI记录前者长度
 					if ((nextLoc = line.indexOf(tmpString, i + tmpNumber)) == -1) r += tmpString; //如果往后找找不到可匹配的结束行内代码的标记,就正常输出
 					else { //找到了,输出行内代码
 						r += tag.inlineCode[0] + escapedHTML(line.slice(i + tmpNumber, nextLoc)) + tag.inlineCode[1];
@@ -752,7 +752,7 @@
 					}
 					i += tmpNumber - 1; //移动遍历光标
 					break;
-						
+
 				case '~'://删除线
 					if (line[i + 1] == '~') {//两个~才表示删除线
 						if (lastDel >= 0) {//前面出现过一次~~了,这个是收尾
@@ -782,7 +782,7 @@
 					if(line[i+1]==line[i]){
 						if(lastStrong>=0){//这个是收尾
 							if(lastStType != line[i]){//上次开头的标记字符与本次的不一样,当作正常字符输出
-								r+=line[i++]+line[i];break;	
+								r+=line[i++]+line[i];break;
 							}
 							//一切正常输出加粗内容
 							rList[lastStrong] += tag.strong[0];
@@ -798,7 +798,7 @@
 					}else{//斜体
 						if(lastEm>=0){//这个是收尾
 							if(lastEmType != line[i]){//上次开头的字符与本次的不一样,当作正常字符输出
-								r += line[i]; break;	
+								r += line[i]; break;
 							}
 							//一切正常输出斜体内容
 							rList[lastEm] += tag.em[0];
@@ -838,9 +838,9 @@
 					if (line[i + 1] != '[') r += '!'; break;
 				case '['://进入了可链接(Linkable)元素区块
 					//判断类型
-					if (line[i - 1] == '!' && (lastMean != rList.length || lastMeanOffset != i - 1)) linkType = 'i';//图片	
-					else if (line[i + 1] == '^') linkType = 's';//脚注型	
-					else linkType = '';//链接	
+					if (line[i - 1] == '!' && (lastMean != rList.length || lastMeanOffset != i - 1)) linkType = 'i';//图片
+					else if (line[i + 1] == '^') linkType = 's';//脚注型
+					else linkType = '';//链接
 					var hadEmbedImg = 0;//是否在遍历的时候发现了内嵌图片的开始标记
 					//循环为了读取到完整的可链接元素信息
 					//done用于判断是否获得完整信息后才结束(即是否成功输出了可链接元素)
@@ -848,13 +848,13 @@
 						switch (line[j]) {
 						//如果是图片模式内部就不能有![,如果是链接模式内部就不能有[
 						case '!':
-							if (line[j + 1] != '[') break;//仅仅是感叹号	
+							if (line[j + 1] != '[') break;//仅仅是感叹号
 							if (linkType != '') j = len;//图片模式和脚注模式跳过
 							else hadEmbedImg = 1, j++;//标记内嵌图片,跳过[
 							break;
 						case '`'://跳过代码块
 							tmpString = (line[j + 1] == '`') ? '``' : '`'; tmpNumber = tmpString.length;
-							if ((nextLoc = line.indexOf(tmpString, j + tmpNumber)) == -1) j += tmpNumber - 1;	
+							if ((nextLoc = line.indexOf(tmpString, j + tmpNumber)) == -1) j += tmpNumber - 1;
 							else j = nextLoc + tmpNumber - 1;
 							break;
 						case '[': j = len; break;//可链接元素内不允许再嵌套一次链接
@@ -921,12 +921,12 @@
 			}
 			//将最后一个子句推入
 			rList.push(r);
-			
+
 			//如果此语句解析完后发现之前有些~_*不是表示粗体斜体或删除线的就正常输出
 			if (lastDel != -1) rList[lastDel] += '~~';
 			if (lastStrong != -1) rList[lastStrong] += lastStType + lastStType;
 			if (lastEm != -1) rList[lastEm] += lastEmType;
-			
+
 			//判断是否当前行有且只有一张图片
 			if (imgCount == 1) {
 				//统计结果块的数量
@@ -937,7 +937,7 @@
 					moreInfo.onlyOneImg = true;
 			}
 			return rList.join('');
-		}		
+		}
 
 
 		/**
@@ -955,14 +955,14 @@
 	}/* </ClassMdjs> */
 
 	//========================
-	
+
 	//Static method
 	var mdjsInside = new ClassMdjs();
 	ClassMdjs.md2html = (md, options) =>
 		mdjsInside.md2html(md, options);
 	ClassMdjs.escapedHTML = escapedHTML;
 	ClassMdjs.MdjsRenderer = ClassMdjsRenderer;
-	
+
 	ClassMdjs.Mdjs = ClassMdjs;
 	//Export functions, 导出函数和类
 	if (typeof module == 'object' && typeof global == 'object')

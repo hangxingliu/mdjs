@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const TO = 'mdjs.min.js',	
+const TO = 'mdjs.min.js',
 	TO_SOURCE_MAP = 'mdjs.min.js.map',
 	FROM = 'mdjs.js',
 	POLYFILL = 'polyfill.js';
@@ -35,10 +35,10 @@ var compressor = require('uglify-js'),
 
 			console.log("Writing to target file...");
 			writeFileSync(TO, result.code);
-			
-			//TODO handle source map			
+
+			//TODO handle source map
 			// writeFileSync(TO_SOURCE_MAP, result.map );
-			
+
 			console.log('\n  build success!\n');
 
 		} catch (e) {
@@ -46,7 +46,7 @@ var compressor = require('uglify-js'),
 		}
 	});
 
-	
+
 } )();
 
 function cleanTargetFile() {
