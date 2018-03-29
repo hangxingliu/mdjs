@@ -1,0 +1,16 @@
+language: node_js
+
+os:
+  - linux
+
+node_js:
+  - "4"
+  - "6"
+  - "8"
+  - "node" # latest stable Node.js release
+
+before_script:
+  - npm install mocha -g
+
+notifications:
+  email: false

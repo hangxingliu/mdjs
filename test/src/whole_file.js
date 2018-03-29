@@ -1,13 +1,11 @@
 //@ts-check
 require('colors');
-require('should');
 let Mdjs = require('../..').Mdjs;
 
 const TEST_ENV = `${__dirname}/../env`;
 
 let fs = require('fs-extra'),
 	htmlWrapper = fs.readFileSync(`${TEST_ENV}/all_in_one_wrapper.html`, 'utf8');
-
 
 let markdown = fs.readFileSync(`${TEST_ENV}/all_in_one.md`, 'utf8');
 
@@ -83,6 +81,7 @@ function getMdjsCliRender() {
 		table: (headContent, bodyContent) =>
 			`  table  \n=========\n${headContent}---------\n${bodyContent}\n=========\n`,
 		tableRow: (isHead, cols, align) => {
+			void align;
 			var line = cols.reduce((a, b) => a += `${b}\t`, '');
 			return (isHead ? line.bold : line) + '\n';
 		},

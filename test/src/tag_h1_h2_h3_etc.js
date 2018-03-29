@@ -1,9 +1,7 @@
 //@ts-check
-require('colors');
-require('should');
-let Mdjs = require('../..').Mdjs;
 
-let { validateHTML: $ } = require('./_utils');
+let Mdjs = require('../..').Mdjs;
+let { validateHTML: $ } = require('./utils/ValidateHTML');
 
 describe('tag <h1>, <h2>, ...', () => {
 	it('headers', () => {

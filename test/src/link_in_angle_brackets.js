@@ -3,54 +3,67 @@
  * such as <https://github.com> but not <div>
  */
 
-require('colors');
-require('should');
+let { Assert } = require('./utils/Assert');
 let Mdjs = require('../..').Mdjs;
 
-var testURL = [
+let testURL = [
 	'http://www.github.com',
 	'https://www.github.com',
 	'ftp://www.github.com',
 	'file:///home/xxx/project/index.html',
-], testMail = [
+];
+let testMail = [
 	'xx@xx.xx',
 	'xx.xx@xx.xx'
-], getUrlHTML = url => `<a title="" href="${url}">${url}</a>`,
-getMailHTML = mail => `<a href="mailto:${mail}">${mail}</a>`;
+];
+
+function getUrlHTML(url) { return `<a title="" href="${url}">${url}</a>`; }
+function getMailHTML(mail) { return `<a href="mailto:${mail}">${mail}</a>`; }
+
+function assertMarkdown(markdown) { return Assert(Mdjs.md2html(markdown)); }
 
 describe('link in angle brackets', () => {
 
 	it('#a link', () => {
-		testURL.forEach(url =>
-			Mdjs.md2html(`<${url}>`).should.be.containEql(getUrlHTML(url)) +
-			Mdjs.md2html(`<${url}> `).should.be.containEql(getUrlHTML(url)) +
-			Mdjs.md2html(` <${url}>`).should.be.containEql(getUrlHTML(url)) +
-			Mdjs.md2html(` <${url}> `).should.be.containEql(getUrlHTML(url)) +
-			Mdjs.md2html(`URL: <${url}>`).should.be.containEql(`URL: ` + getUrlHTML(url) ) +
-			Mdjs.md2html(`URL: <${url}>,you can visit it.`).should.be.containEql(`URL: ` +getUrlHTML(url) + `,you can visit it.`)
-		);
+		testURL.forEach(url => {
+			let html = getUrlHTML(url);
+			assertMarkdown(`<${url}>`).containsSubString(html);
+			assertMarkdown(`<${url}> `).containsSubString(html);
+			assertMarkdown(` <${url}>`).containsSubString(html);
+			assertMarkdown(` <${url}> `).containsSubString(html);
+
+			assertMarkdown(`URL: <${url}>`).containsSubString(`URL: ` + html);
+			assertMarkdown(`URL: <${url}>,you can visit it.`).containsSubString(`URL: ` + html + `,you can visit it.`);
+		});
 	});
+
 	it('#a mail', () => {
-		testMail.forEach(mail =>
-			Mdjs.md2html(`<${mail}>`).should.be.containEql(getMailHTML(mail)) +
-			Mdjs.md2html(`<${mail}> `).should.be.containEql(getMailHTML(mail)) +
-			Mdjs.md2html(` <${mail}>`).should.be.containEql(getMailHTML(mail)) +
-			Mdjs.md2html(` <${mail}> `).should.be.containEql(getMailHTML(mail)) +
-			Mdjs.md2html(`mail: <${mail}>`).should.be.containEql(`mail: ` + getMailHTML(mail)) +
-			Mdjs.md2html(`please email to this link:<${mail}>. `).should.be.containEql(
-				`please email to this link:` + getMailHTML(mail) + `.`)
-		);
+		testMail.forEach(mail => {
+			let html = getMailHTML(mail);
+
+
+			assertMarkdown(`<${mail}>`).containsSubString(html);
+			assertMarkdown(`<${mail}> `).containsSubString(html);
+			assertMarkdown(` <${mail}>`).containsSubString(html);
+			assertMarkdown(` <${mail}> `).containsSubString(html);
+			assertMarkdown(`mail: <${mail}>`).containsSubString(`mail: ` + html);
+			assertMarkdown(`please email to this link:<${mail}>. `).containsSubString(
+				`please email to this link:` + html + `.`);
+		});
 	});
+
 	it('#a tag', () => {
-		Mdjs.md2html('<a href="http://www.github.com">hello</a>').should.be
-			.eql(`<p><a href="http://www.github.com">hello</a></p>`);
-		Mdjs.md2html('<span data-mail="xx@xx.com">hello</span>').should.be
-			.eql(`<p><span data-mail="xx@xx.com">hello</span></p>`);
+		assertMarkdown('<a href="http://www.github.com">hello</a>')
+			.equals(`<p><a href="http://www.github.com">hello</a></p>`);
+
+		assertMarkdown('<span data-mail="xx@xx.com">hello</span>')
+			.equals(`<p><span data-mail="xx@xx.com">hello</span></p>`);
 	});
+
 	it('#mix', () => {
-		Mdjs.md2html('<span data-link="https://www.github.com"><https://github.com></span>').should.be
-			.eql(`<p><span data-link="https://www.github.com"><a title="" href="https://github.com">https://github.com</a></span></p>`);
-		Mdjs.md2html('<span data-mail="xx@xx.com"><xx@xx.com></span>').should.be
-			.eql(`<p><span data-mail="xx@xx.com"><a href="mailto:xx@xx.com">xx@xx.com</a></span></p>`);
+		assertMarkdown('<span data-link="https://www.github.com"><https://github.com></span>')
+			.equals(`<p><span data-link="https://www.github.com"><a title="" href="https://github.com">https://github.com</a></span></p>`);
+		assertMarkdown('<span data-mail="xx@xx.com"><xx@xx.com></span>')
+			.equals(`<p><span data-mail="xx@xx.com"><a href="mailto:xx@xx.com">xx@xx.com</a></span></p>`);
 	});
 });

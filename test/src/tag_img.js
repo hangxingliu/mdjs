@@ -1,22 +1,24 @@
 //@ts-check
-require('colors');
-require('should');
+
+let { Assert } = require('./utils/Assert');
 let Mdjs = require('../..').Mdjs;
 
 const IMG = `![this is a image](imgs/img.png)`;
 
+function assertMarkdown(markdown) { return Assert(Mdjs.md2html(markdown)); }
+
 describe('tag <img>', () => {
 	it('# only one image in the line', () => {
-		Mdjs.md2html(`${IMG}`).should
-			.has.not.containEql('<p>').and.not.containEql('</p>');
-		Mdjs.md2html(`${IMG} `).should
-			.has.not.containEql('<p>').and.not.containEql('</p>');
-		Mdjs.md2html(` ${IMG} `).should
-			.has.not.containEql('<p>').and.not.containEql('</p>');
+		assertMarkdown(`${IMG}`)
+			.doesNotContainSubString('<p>').and.doesNotContainSubString('</p>');
+		assertMarkdown(`${IMG} `)
+			.doesNotContainSubString('<p>').and.doesNotContainSubString('</p>');
+		assertMarkdown(` ${IMG} `)
+			.doesNotContainSubString('<p>').and.doesNotContainSubString('</p>');
 
-		Mdjs.md2html(`img: ${IMG} `).should
-			.has.containEql('<p>').and.containEql('</p>');
-		Mdjs.md2html(` ${IMG}. `).should
-			.has.containEql('<p>').and.containEql('</p>');
+		assertMarkdown(`img: ${IMG} `)
+			.containsSubString('<p>').and.containsSubString('</p>');
+		assertMarkdown(` ${IMG}. `)
+			.containsSubString('<p>').and.containsSubString('</p>');
 	});
 });

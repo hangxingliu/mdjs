@@ -1,20 +1,19 @@
 //@ts-check
 require('colors');
-require('should');
 let Mdjs = require('../..').Mdjs;
 
-let { validateHTML: $ } = require('./_utils');
+let { validateHTML: $ } = require('./utils/ValidateHTML');
 
 describe('tag <pre>, <code>, ...', () => {
 	it('code blocks', () => {
 
 		$(Mdjs.md2html([
 			'``` javascript',
-			'console.log("helloworld!");',
+			'console.log("HelloWorld!");',
 			'```'
 		].join('\n'))).select('pre code[data-lang="javascript"]')
 			.length(1)
-			.text('console.log("helloworld!");');
+			.text('console.log("HelloWorld!");');
 
 		$(Mdjs.md2html([
 			'``` javascript',
@@ -27,11 +26,11 @@ describe('tag <pre>, <code>, ...', () => {
 
 		$(Mdjs.md2html([
 			'',
-			'    console.log("helloworld!");',
+			'    console.log("HelloWorld!");',
 			''
 		].join('\n'))).select('pre code')
 			.length(1)
-			.text('  console.log("helloworld!");');
+			.text('  console.log("HelloWorld!");');
 
 
 	});
