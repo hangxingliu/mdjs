@@ -1,64 +1,46 @@
 #!/usr/bin/env node
 
-const TO = 'mdjs.min.js',
-	TO_SOURCE_MAP = 'mdjs.min.js.map',
-	FROM = 'mdjs.js',
-	POLYFILL = 'polyfill.js';
+//@ts-check
 
-var compressor = require('uglify-js'),
-	babel = require('babel-core'),
-	{ existsSync, unlinkSync, writeFileSync, readFileSync } = require('fs');
+let babelCore = require('babel-core'),
+	fs = require('fs-extra'),
+	path = require('path');
 
-(function main() {
-	console.log(`Cleaning target file "${TO}"...`);
-	cleanTargetFile();
-
-	console.log("Babel transforming...");
-	babel.transformFile(FROM, {
-		plugins: [
-			"transform-es2015-template-literals",
-			"transform-es2015-arrow-functions"
-		],
-		sourceMaps: true
-	}, (err, { code, map}) => {
-		err && throwError(err);
-		try {
-			console.log("Concatenating polyfill scripts...");
-			code = readFileSync(POLYFILL, 'utf8') + '\n' + code;
-			//TODO handle source map
-			console.log("UglifyJs minifying codes...");
-			var result = compressor.minify(code, {
-				fromString: true,
-				inSourceMap: map,
-				outSourceMap: TO_SOURCE_MAP
-			});
-
-			console.log("Writing to target file...");
-			writeFileSync(TO, result.code);
-
-			//TODO handle source map
-			// writeFileSync(TO_SOURCE_MAP, result.map );
-
-			console.log('\n  build success!\n');
-
-		} catch (e) {
-			throwError(e);
-		}
-	});
+const mainInput = path.join(__dirname, 'mdjs.js');
+const polyfillInput = path.join(__dirname, 'polyfill.js');
+const output = path.join(__dirname, 'mdjs.min.js');
+const plugins = [
+	"minify-mangle-names",
+	"minify-simplify",
+	"transform-merge-sibling-variables",
+	"transform-minify-booleans",
+	["transform-es2015-block-scoping", { throwIfClosureRequired: true }],
+	"transform-es2015-template-literals",
+	"transform-es2015-arrow-functions"
+];
 
 
-} )();
-
-function cleanTargetFile() {
-	try {
-		existsSync(TO) && unlinkSync(TO);
-	} catch (e) {
-		throwError(e);
-	}
-}
+fs.pathExists(output)
+	.then(exist => exist
+		? log(`Cleaning target file "${output}"...`).then(() => fs.remove(output))
+		: Promise.resolve())
+	.then(() => log("Babel transforming..."))
+	.then(() => Promise.all([polyfillInput, mainInput].map(babel)))
+	.then(results => log("writing target file...")
+		.then(() => fs.writeFile(output, results.map(it => it.code).join('\n'))))
+	.then(() => log("build success!"))
+	.catch(throwError);
 
 function throwError(error) {
 	console.error(error.stack || error);
 	console.error('\n  build failed!\n');
 	process.exit(1);
+}
+
+function log(msg) { console.log(msg); return Promise.resolve(); }
+function babel(file) {
+	return new Promise((resolve, reject) =>
+		babelCore.transformFile(file, {
+			plugins, sourceMaps: true, compact: true, comments: false
+		}, (e, r) => e ? reject(e) : resolve(r)));
 }
