@@ -25,7 +25,7 @@ interface ClassMdjsStatic {
 }
 
 interface ClassMdjsRenderer {
-	
+
 	addReferenceLinkProvider(provider: (name: String) => String | MdjsLinkObject): void;
 	_resolveRefLink(referName: String): String | MdjsLinkObject;
 
@@ -61,7 +61,7 @@ interface ClassMdjsRenderer {
 		tableRow(isHead: Boolean, cols: Array<String>, align: Array<Number>): String;
 		footNode(name: String, content: String): String;
 	};
-	
+
 }
 
 interface ClassMdjsRendererStatic {
