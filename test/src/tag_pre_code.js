@@ -1,5 +1,4 @@
 //@ts-check
-require('colors');
 let Mdjs = require('../..').Mdjs;
 
 let { validateHTML: $ } = require('./utils/ValidateHTML');

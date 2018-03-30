@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<meta name="renderer" content="webkit" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0" />
+		<title>Mdjs Browser Demo</title>
+	</head>
+	<body>
+		<div id="preview"></div>
+		<script src="../../mdjs.min.js"></script>
+		<script>
+			var markdown = [
+				"# Mdjs Browser Demo",
+				"",
+				"This demo use `../../mdjs.min.js`",
+				"",
+				"> Markdown is a lightweight markup language with plain text formatting syntax.   ",
+				"> from: <https://en.wikipedia.org/wiki/Markdown>",
+				"",
+			].join('\n');
+			document.getElementById('preview').innerHTML = Mdjs.md2html(markdown);
+		</script>
+
+	</body>
+</html>

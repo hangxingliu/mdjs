@@ -4,7 +4,6 @@ os:
   - linux
 
 node_js:
-  - "4"
   - "6"
   - "8"
   - "node" # latest stable Node.js release
