@@ -1,6 +1,6 @@
 //@ts-check
 
-let { Assert } = require('./utils/Assert');
+let { Assert } = require('@hangxingliu/assert');
 let Mdjs = require('../..').Mdjs;
 
 const IMG = `![this is a image](imgs/img.png)`;

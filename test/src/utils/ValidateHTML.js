@@ -1,6 +1,6 @@
 //@ts-check
 
-let { Assert } = require('./Assert');
+let { Assert } = require('@hangxingliu/assert');
 let cheerio = require('cheerio');
 
 /**

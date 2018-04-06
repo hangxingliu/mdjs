@@ -1,7 +1,10 @@
 # Mdjs
 
-> Mdjs 是一个用 Javascript 写的 轻量级的的 Markdown 解析器   
-> **Demo**: <http://hangxingliu.github.io/mdjs.editor/>
+[![Build Status](https://travis-ci.org/hangxingliu/mdjs.svg?branch=master)](https://travis-ci.org/hangxingliu/mdjs)
+
+> Mdjs is a lightweight Markdown parser for JavaScript
+>  (一个轻量级的 Markdown 解析器)   
+> **Demo**: <http://hangxingliu.github.io/mdjs.editor/>   
 > **Mdjs.editor**: 
 > [Github](https://github.com/hangxingliu/mdjs.editor)
 > [Git@OSC](http://git.oschina.net/voyageliu/mdjs.editor)

@@ -5,6 +5,7 @@
   "main": "mdjs.js",
   "dependencies": {},
   "devDependencies": {
+    "@hangxingliu/assert": "^0.1.1",
     "@types/mocha": "^5.0.0",
     "@types/node": "^9.6.1",
     "babel-core": "^6.26.0",

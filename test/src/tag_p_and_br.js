@@ -1,6 +1,6 @@
 //@ts-check
 
-let { Assert } = require('./utils/Assert');
+let { Assert } = require('@hangxingliu/assert');
 let Mdjs = require('../..').Mdjs;
 
 function assertMarkdown(markdown, opts) { return Assert(Mdjs.md2html(markdown, opts)); }

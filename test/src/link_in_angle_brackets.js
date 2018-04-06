@@ -3,7 +3,7 @@
  * such as <https://github.com> but not <div>
  */
 
-let { Assert } = require('./utils/Assert');
+let { Assert } = require('@hangxingliu/assert');
 let Mdjs = require('../..').Mdjs;
 
 let testURL = [

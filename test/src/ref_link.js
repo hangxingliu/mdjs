@@ -1,7 +1,7 @@
 //@ts-check
 
 let Mdjs = require('../..').Mdjs,
-	{ Assert } = require('./utils/Assert'),
+	{ Assert } = require('@hangxingliu/assert'),
 	{ validateHTML: $ } = require('./utils/ValidateHTML');
 
 function markdown(lines = []) { return Mdjs.md2html(lines.join('\n')); }
