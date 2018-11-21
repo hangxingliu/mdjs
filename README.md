@@ -129,12 +129,12 @@ var html = mdjs.md2html(markdownText);
 参考学习或开发维护可参考文档:
 [DEVELOP_MANUAL.md](documents/DEVELOP_MANUAL.md)
 
-## 作者
+## Author (作者)
 
-**刘越(Hangxingliu)**   
-[Git@OSC](https://git.oschina.net/voyageliu)   
-[Github](https://github.com/hangxingliu)
+@hangxingliu (Liu Yue)   
+[Github](https://github.com/hangxingliu)   
+[码云Gitee](https://git.oschina.net/voyageliu)   
 
-## 开源协议
+## License (开源协议)
 
 [Apache Licence 2.0](LICENSE)

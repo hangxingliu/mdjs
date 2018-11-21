@@ -4,12 +4,14 @@ os:
   - linux
 
 node_js:
-  - "6"
   - "8"
+  - "10"
   - "node" # latest stable Node.js release
 
 before_script:
   - npm install mocha -g
 
 notifications:
-  email: false
+  email:
+    on_failure: true
+    on_success: false
