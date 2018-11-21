@@ -30,6 +30,8 @@
 		regex_footRefDefine = /^\[([\^]?)(.+)\]\:\s+(.+)$/,
 		regex_code_language = /\$language/g;
 
+	const REGEX_SPECIAL_CHARS = /[<>"'&]/;
+
 	// ==========================
 	// Spacing string cache (空格字符缓存)
 	const spacingCache = ['', ' ', '  ', '   ', '    ', '     ', '      ', '       ', '        '];
@@ -50,14 +52,39 @@
 	}
 
 	/**
-	 * @description 对一个字符串进行HTML转义(把空格,<,>,",'转换为)
-	 * @param {String} str 字符串
-	 * @return {String} 转义后的HTML
+	 * Escape special characters in html string (HTML字符转义)
+	 * @param {string} html
+	 * @return {string} escaped string (转义后的字符串)
 	 */
-	function escapedHTML(str) {
-		var str = str.replace(/&/g, '&amp;');
-		return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;').
-			replace(/\'/g, '&#39;').replace(/\"/g, '&quot;').replace(/\n/g, '</br>');
+	function escapedHTML(html) {
+		// This function is reference from:
+		//   https://github.com/component/escape-html/blob/master/index.js
+		const matched = REGEX_SPECIAL_CHARS.exec(html);
+		if (!matched)
+			return html;
+
+		let result = ''
+		let escape = '';
+		let index = 0;
+		let lastIndex = 0;
+		const htmlLen = html.length;
+		for (index = matched.index; index < htmlLen; index++) {
+			switch (html.charCodeAt(index)) {
+				case 34: escape = '&quot;'; break;// "
+				case 38: escape = '&amp;'; break;// &
+				case 39: escape = '&#39;'; break;// '
+				case 60: escape = '&lt;'; break;// <
+				case 62: escape = '&gt;'; break;// >
+				default: continue;
+			}
+			if (lastIndex !== index)
+				result += html.substring(lastIndex, index);
+			lastIndex = index + 1;
+			result += escape;
+		}
+		return lastIndex !== index
+			? (result + html.substring(lastIndex, index))
+			: result;
 	}
 
 	/**
