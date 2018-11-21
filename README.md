@@ -11,43 +11,21 @@
 
 ---
 
-## 目前版本
+## Latest version (目前版本)
 
-### 1.0.3 **beta**
+### 1.0.4
 
-2017-05-17
+2018-11-21
 
-- 修复了标题内含有特殊字符导致生成无效的HTML的 bug
-- 修复了代码块首行多出一个空白行的 bug
-- 增加了对应的单元测试
+- 修复了 HTML 字符转义的错误. 并提升了 HTML 字符转义函数的效率
+- 优化了代码, 添加了更多注释
 
-### 1.0.1 **beta**
-
-2017-03-19
-
-- 修复了使用尖括号`<xxx>`表示网址和 Email 时匹配出错的 bug
-- 修复了段落无法自动自动收尾`</p>`的 bug
-- 修复了在段落换行上的一点小问题
-- 修复了某些邮箱地址无法被匹配的bug(例如:`<xxx.xx@xx.xx>`)
-- 优化了一行只有一张图片的检测机制
-
-### 1.0.0 **beta**
-
-2017-03-16
-
-- 修复了许多解析的Bug
-- 将Mdjs的功能全部封装成了类, 且支持了在Node.js开发中使用
-- 支持了自定义渲染器(针对自己的需要定制HTML输出,以及自定的参考式提供器)
-- 支持了`alwaysNewline`解析参数, 以至于可以支持行末空格换行 也可以支持回车换行
-- 添加了`typescript`模板文件, 使得在使用时IDE可以有更好的代码提示与补全
-- 去掉了默认的错误try/catch, 让开发者可以自己捕获错误对象
-- 优化了大量代码
 
 更多更新日志请参阅: [CHANGELOG.md](documents/CHANGELOG.md)
 
-## 使用
+## Usage (使用)
 
-### Web前端
+### Web frontend (Web 前端)
 
 ``` html
 <!-- 不依赖其他任何库,仅一个脚本文件即可 -->
@@ -78,7 +56,7 @@ var mdjs = new Mdjs();
 var html = mdjs.md2html(markdownText);
 ```
 
-### 配置解析选项
+### Options for parser (配置解析选项)
 
 ``` javascript
 var mdjs = new Mdjs();
@@ -88,7 +66,7 @@ var html = mdjs.md2html(markdownText, {
 });
 ```
 
-### 自定义渲染规则
+### Custom render rules (自定义渲染规则)
 
 ``` javascript
 //创建自定义渲染器类
@@ -110,7 +88,7 @@ var html = mdjs.md2html(markdownText);
 更多自定义渲染规则请参阅: [CUSTOM_RENDER.md](documents/CUSTOM_RENDER.md)
 
 
-## 语法支持
+## Features (语法支持)
 
 目前广泛使用的的Markdown语法都能被解析,
 额外支持的语法还有:
@@ -121,10 +99,11 @@ var html = mdjs.md2html(markdownText);
 
 暂不支持的语法和功能:
 
+- `选项框`
 - `流程图,时序图和LaTeX公式`
 - `代码块的高亮`
 
-## 开发维护手册
+## Maintenance manual (开发维护手册)
 
 参考学习或开发维护可参考文档:
 [DEVELOP_MANUAL.md](documents/DEVELOP_MANUAL.md)
