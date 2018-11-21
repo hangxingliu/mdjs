@@ -1,0 +1,26 @@
+WSLGit
+
+
+Use Git installed in WSL(windows Subsystem for Linux) from Windows and Visual Studio Code.
+
+The project was inspired by A. R. S.'s project andy-5/wslgit written by Rust.
+
+Usage
+Please make sure git have been installed in your WSL.
+one-liner: sudo apt install git -y
+Copy wslgit.sh to /usr/bin/ in your WSL.
+Configure your VSCode settings.json, set git.path as the path to file git.bat located in this project, example:
+{
+	"git.path": "C:\\path\\to\\git.bat"
+}
+Principles
+Transfer git invoking from Windows batch file git.bat to wslgit.sh located in WSL.
+Convert Windows path in parameters to Linux path by wslpath or awk
+Convert Linux path in git output back to Windows path.
+Convert path by wslpath if git output only contains one Linux path
+Otherwise, convert path by awk following WSL mounted drvfs list (mount -t drvfs)
+Author
+LiuYue (hangxingliu)
+
+License
+GPL-3.0

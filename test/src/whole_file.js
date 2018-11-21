@@ -3,13 +3,16 @@ require('colors');
 let Mdjs = require('../..').Mdjs;
 
 const TEST_ENV = `${__dirname}/../env`;
+const DIST_DIR = `${TEST_ENV}/dist`;
 
 let fs = require('fs-extra'),
 	htmlWrapper = fs.readFileSync(`${TEST_ENV}/all_in_one_wrapper.html`, 'utf8');
 
 let markdown = fs.readFileSync(`${TEST_ENV}/all_in_one.md`, 'utf8');
 
-fs.mkdirsSync(`${TEST_ENV}/dist`);
+if (fs.existsSync(DIST_DIR))
+	fs.removeSync(DIST_DIR);
+fs.mkdirsSync(DIST_DIR);
 
 describe('whole file test', () => {
 	it('#all in one markdown document to HTML', () => {
@@ -28,7 +31,7 @@ describe('whole file test', () => {
 				`https://en.wikipedia.org/wiki/${name.slice(5).replace(/\s+/g, '_')}` :
 				null);
 
-		fs.writeFileSync(`${TEST_ENV}/dist/all_in_one.html`,
+		fs.writeFileSync(`${DIST_DIR}/all_in_one.html`,
 			htmlWrapper.replace('{{ output }}', mdjs.md2html(markdown)));
 	});
 
@@ -42,7 +45,7 @@ describe('whole file test', () => {
 				`https://en.wikipedia.org/wiki/${name.slice(5).replace(/\s+/g, '_')}` :
 				null);
 
-		fs.writeFileSync(`${TEST_ENV}/dist/all_in_one`,mdjs.md2html(markdown));
+		fs.writeFileSync(`${DIST_DIR}/all_in_one`,mdjs.md2html(markdown));
 	});
 
 

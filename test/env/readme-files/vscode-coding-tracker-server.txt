@@ -1,0 +1,80 @@
+Visual Studio Code Coding Tracker Server
+
+VSCode Coding Tracker extension server side program.
+
+Links:
+Extension side Github repo
+VSCode extensions marketplace
+
+Give me coffee for coding better via Paypal
+Your support encourage me to make my vscode extensions better and better! (and add more and more features)
+
+Screenshot
+
+
+Current Version
+0.7.0 (2018/05/xx) Coding...
+Support token files to declare multi-tokens
+ basic support
+ support computerId attributes for uploadToken
+ more unit tests
+ more and more unit tests
+More filter rules are supported.
+ backend support
+ frontend support
+ start new front-end deveploment (replace pug to preact jsx)
+Refactory I18N support placeholder to more readable (maybe delay)
+Merge file path and project path better.
+ unit test for report-v2
+ depends on file reader with cache and pre-scan for finding projects
+Optimize database reader (add cache for old files)
+ new intermediate layer for filesystem reading operation
+ add cache for old files by following modify time
+ add this layer into AnalyzeCore
+ unit tests
+0.6.0 (2018/03/23)
+Support exporting/downloading report data as CSV format.
+Support adding association for projects (So you can merge report from different projects).
+Fix incorrect 24 hours report.
+Fix some wrong i18n on the UI.
+More compatible with old browsers and mobile browsers.
+How To Install And Use
+Make sure You have installed Node.js development environment included npm
+Install this server program
+Way 1 : Clone this repository and execute npm i in the folder where this README.md located
+Way 2 : Using npm i vscode-coding-tracker-server anywhere you want to install to
+Execute npm start or node app to launch this server program.
+You could give it more options like npm start -- ${MORE_SERVER_OPTIONS} if you start it by using npm start
+Open URL http://domain:port/report?token=${YOUR_TOKEN} to get coding report
+In default, URL in local is http://127.0.0.1:10345/report?token=${YOUR_TOKEN}
+If you using --public-report option to launch server, you could ignore the query parameter token in above URL
+More server option things:
+
+--local: It means server bind address on 127.0.0.1 when server listening. (Other computer could not upload data and visit report page in this mode)
+
+--random-token: It means server will using a 8 length random string as API/upload token even if you giving a token by -t option
+
+--public-report: It means anyone could visit report page without token
+
+more options information you could find by using command node app --help
+
+more version information: CHANGELOG.md
+
+Contributing
+It is necessary to read CONTRIBUTING.md before contributing codes/translations or building codes
+
+Editing/Modifying/Buidling codes
+Goto chapter Editing, Building, Running and Testing in CONTRIBUTING.md.
+
+Files manifest
+redirect to FILES.md
+
+Author
+LiuYue
+
+Contributors
+Dolgishev Viktor (@vdolgishev)
+
+License
+GPL-3.0
+
