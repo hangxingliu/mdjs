@@ -11,44 +11,39 @@
 	/** name export to window/global/module */
 	const EXPORT_NAME = "Mdjs";
 
-	/**
-	 * @description 可以用斜杠转义的字符(0.3加入|转义)
-	 */
-	var specialCharacters= "#`*[]()-_{}+.!|\\";
+	const hasPrototypeMethod = (cls, method) => typeof cls.prototype[method] === 'function';
 
-	/**
-	 * @description 用于判断Markdown语句的正则表达式
-	 */
-	var regex_ul = /^[\*\-\+] +\S*/g,
-		regex_ol = /^\d+\. +\S*/g,
-		regex_delHTML = /<\/?[^<>]+>/g,
-		regex_delNonWordChar = /\W+/g,
-		regex_url = /^\w+:\/{2,3}\S+$/g,
-		regex_email = /^\S+@\S+\.\S+$/g,
-		regex_replaceCRLF = /\r\n/g,
-		regex_splitLine = /[\r\n]/,
-		regex_footRefDefine = /^\[([\^]?)(.+)\]\:\s+(.+)$/,
-		regex_code_language = /\$language/g;
+	/** characters could be escaped by '\\' 可以用斜杠转义的字符(0.3加入|转义) */
+	const SPECIAL_CHARACTERS= "#`*[]()-_{}+.!|\\";
 
+	//#region regular expressions for markdown
+	// Some regular expressions used to determine Markdown (用于判断 Markdown 语句的正则表达式)
+	const REGEX_UL = /^[\*\-\+] +\S*/g;
+	const REGEX_OL = /^\d+\. +\S*/g;
+	const REGEX_DEL_HTML = /<\/?[^<>]+>/g;
+	const REGEX_DEL_NONWORD_CHAR = /\W+/g;
+	const REGEX_URL = /^\w+:\/{2,3}\S+$/g;
+	const REGEX_EMAIL = /^\S+@\S+\.\S+$/g;
+	const REGEX_FOOT_REF_DEFINE = /^\[([\^]?)(.+)\]\:\s+(.+)$/;
+	const REGEX_CODE_LANGUAGE = /\$language/g;
+	//#endregion
+
+	/** it used to `escpaedHTML` function (用于 escapedHTML 函数的正则表达式) */
 	const REGEX_SPECIAL_CHARS = /[<>"'&]/;
 
-	// ==========================
-	// Spacing string cache (空格字符缓存)
-	const spacingCache = ['', ' ', '  ', '   ', '    ', '     ', '      ', '       ', '        '];
-	const spacingCacheCount = spacingCache.length;
-
-	const createSpacingString = length => new Array(length).join(' ');
-	const spacingString1024 = createSpacingString(1024);
+	const _createBlankString = hasPrototypeMethod(String, 'repeat')
+		? (len => ' '.repeat(len))
+		: (len => new Array(len).join(' '));
+	const blankString1024 = _createBlankString(1024);
 
 	/**
-	 * generate special length spacing string. (生成指定长度的空格内容字符串)
-	 * @param {number} len length 长度
+	 * generate special length space string. (生成指定长度的空格内容字符串)
+	 * @param {number} len 长度
 	 */
-	function getSpaceString(len) {
+	function getBlankString(len) {
 		if (len < 0) return '';
-		if (len < spacingCacheCount) return spacingCache[len];
-		if (len < 1024) return spacingString1024.slice(0, len);
-		return createSpacingString(len);
+		if (len < 1024) return blankString1024.slice(0, len);
+		return _createBlankString(len);
 	}
 
 	/**
@@ -207,7 +202,7 @@
 
 	/**
 	 * 创建一个Markdown解析器的类
-	 * @param {any} [customRender] 自定义的Markdown渲染器
+	 * @param {ClassMdjsRenderer} [customRender] 自定义的Markdown渲染器
 	 */
 	function ClassMdjs(customRender) {
 		//Markdown内容渲染器
@@ -240,7 +235,7 @@
 			listItemStack = new ClassMdjsListItemStack();
 
 			//原始行
-			var rawLines = md.replace(regex_replaceCRLF, '\n').split(regex_splitLine),
+			var rawLines = md.split(/\r?\n/),
 				rawLinesLength = rawLines.length;
 			//去掉了参考式的行
 			var lines = [], line = '';
@@ -248,7 +243,7 @@
 			//寻找参考式
 			for (var i = 0; i < rawLinesLength; i++){
 				line = rawLines[i];
-				var part = line.trim().match(regex_footRefDefine);
+				var part = line.trim().match(REGEX_FOOT_REF_DEFINE);
 				//不是脚标或参考式 行
 				if (!part) {
 					lines.push(line);
@@ -261,7 +256,7 @@
 					for (var k = i + 1; k < rawLinesLength; k++ , i++) {
 						line = rawLines[k].trim();
 						if (!line) break;//空白行
-						if (line.match(regex_footRefDefine)) break;//下一个脚注或参考式
+						if (line.match(REGEX_FOOT_REF_DEFINE)) break;//下一个脚注或参考式
 						content += '\n' + rawLines[k];
 					}
 					object = { title: part[2], content: content }
@@ -276,8 +271,8 @@
 
 		/**
 		 * @description 从一个可以带标题的链接字符串中出链接地址和链接标题
-		 * @param {String} linkString 链接字符串,例如: http://xxx.xx "Title"
-		 * @return {any} 包含 url 属性和 title 属性的对象
+		 * @param {string} linkString 链接字符串,例如: http://xxx.xx "Title"
+		 * @return {{url: string; title: string;}} 包含 url 属性和 title 属性的对象
 		 */
 		function analyzeTitleableLink(linkString){
 			linkString = linkString.trim();
@@ -323,10 +318,10 @@
 		 * @return {number} 语句前的空白字符的数量
 		 */
 		function countBlankAtTheLeft(str) {
-			var lineLeft=0;
+			var lineLeft = 0;
 			for (var j = 0; j < str.length; j++){
-				if(str[j]==' ')lineLeft++;
-				else if(str[j]=='\t')lineLeft+=4;
+				if (str[j] == ' ') lineLeft++;
+				else if (str[j] == '\t') lineLeft += 4;
 				else break;
 			}
 			return lineLeft;
@@ -360,7 +355,7 @@
 		 * @returns {string}
 		 */
 		function toLegalAttributeValue(str) {
-			return str.replace(regex_delNonWordChar, '_').replace(/^_/, '').replace(/_$/, '');
+			return str.replace(REGEX_DEL_NONWORD_CHAR, '_').replace(/^_/, '').replace(/_$/, '');
 		}
 
 		/**
@@ -438,7 +433,7 @@
 				if (leftWhiteLength < 4) {
 					if (trimmedLine.startsWith('```')) {//进入代码块
 						var lang = trimmedLine.slice(3).trim();
-						resultMarkdown += tag.codeBlock[0].replace(regex_code_language, lang);
+						resultMarkdown += tag.codeBlock[0].replace(REGEX_CODE_LANGUAGE, lang);
 						lineNumberInCodeBlock = 1;
 						continue;
 					}
@@ -455,7 +450,7 @@
 						//tocMark 给当前标题标记的 ID 和 name,为了能让TOC目录点击跳转
 						var headerName = headerText = handlerInline(headerText, 0);
 						tocLevel.push(tmpHeaderLevel);
-						tocTitle.push(headerName = headerName.trim().replace(regex_delHTML, ''));
+						tocTitle.push(headerName = headerName.trim().replace(REGEX_DEL_HTML, ''));
 						tocUri.push(headerName = toLegalAttributeValue(headerName));
 						resultMarkdown += tagFunc.heading(tmpHeaderLevel, headerName, headerText);
 						continue;
@@ -517,12 +512,12 @@
 					//代码块(需要检查上一行),普通文本
 					//代码块
 					if(i==0 || lines[i-1].trim().length == 0){
-						resultMarkdown += tag.codeBlock[0].replace(regex_code_language, '');
+						resultMarkdown += tag.codeBlock[0].replace(REGEX_CODE_LANGUAGE, '');
 						var space = '',endL = i;//space是为了中间的空白行,endl是为了保存代码最后有效行在哪
 						for (var j = i, ltab; j < linesLength; j++){
 							if (lines[j].trim().length == 0) { space += '\n'; continue; }//空白行,记入space,这样做是为了如果代码块最后有空行而不输出
 							if ((ltab = countBlankAtTheLeft(lines[j])) < 4) break;//空白小于一个Tab键了,退出代码块
-							resultMarkdown += space + (j == i ? '' : '\n') + getSpaceString(ltab - 2) +//去掉开头多余的空白字符
+							resultMarkdown += space + (j == i ? '' : '\n') + getBlankString(ltab - 2) +//去掉开头多余的空白字符
 								escapedHTML(lines[j].trim());
 							space = '', endL = j;//重置空白行和记录最后有效行
 						}
@@ -542,7 +537,7 @@
 						else if (nextLine[0] == '-') level = 2;
 						var headerName = headerText = handlerInline(trimmedLine,0);
 						tocLevel.push(level);
-						tocTitle.push(headerName = headerName.trim().replace(regex_delHTML, ''));
+						tocTitle.push(headerName = headerName.trim().replace(REGEX_DEL_HTML, ''));
 						tocUri.push(headerName = toLegalAttributeValue(headerName));
 						resultMarkdown += tagFunc.heading(level, headerName, headerText);
 						i++;//跳过下一行
@@ -630,8 +625,8 @@
 		 */
 		function getCurrentLineListItemType(trimmedLine) {
 			if (isCutLine((trimmedLine))) return 0;
-			if(trimmedLine.search(regex_ol)!=-1)return 1;
-			if(trimmedLine.search(regex_ul)!=-1)return 2;
+			if (trimmedLine.search(REGEX_OL) != -1) return 1;
+			if (trimmedLine.search(REGEX_UL) != -1) return 2;
 			return 0;
 		}
 
@@ -640,7 +635,7 @@
 		 * @param {any} level 列表语句前面有多少个空格/列表的层次
 		 * @param {number} type 哪一种列表(1:数字列表,2:无序列表)
 		 * @param {any} str Markdown语句
-		 * @return {String} 此句 Markdown 的 HTML
+		 * @return {string} 此句 Markdown 的 HTML
 		 */
 		function handlerList(level, type, str) {
 			var topLevel = listItemStack.topLevel();//上一个列表的层次
@@ -671,7 +666,7 @@
 
 		/**
 		 * @description 在处理多个Markdown语句时检测之前是不是还有列表没有结尾
-		 * @returns {String} ,如果还有列表没有结尾,则返回列表结尾;反之,返回空白字符串
+		 * @returns {string} ,如果还有列表没有结尾,则返回列表结尾;反之,返回空白字符串
 		 */
 		function handlerListEnd(){
 			var res = '';
@@ -687,7 +682,7 @@
 
 		/**
 		 * @description 解析表格格式行,即为表格第二行,格式说明(0:左对齐,1:居中,2:右对齐)
-		 * @param {String} tStr trim()过的语句字符串
+		 * @param {string} tStr trim()过的语句字符串
 		 * @param {number} col 表格头部标明了有多少列,如果实际解析出来的没有这么多列,则用0(左对齐)补齐剩下的列
 		 * @return {Array|boolean} 如果此语句是表格格式行则返回解析出来的格式,否则返回false
 		 */
@@ -706,7 +701,7 @@
 		}
 		/**
 		 * @description 解析表格中的行,将一行表格语句分解成一列一列的数组
-		 * @param {String} tStr trim()过的语句字符串
+		 * @param {string} tStr trim()过的语句字符串
 		 * @param {boolean} [isFmtL] 此行是否应该为格式行,默认false
 		 * @return {any[]|false} 如果此语句是表格中的行则返回解析出来的每一列组成的数组,
 		 * 否则返回false(如果指定为格式行,则若不满足格式行的要求,也会返回false)
@@ -780,7 +775,7 @@
 				switch (line[i]) {
 				case '\\'://转义字符\打头
 					//如果\后面的字符是可转义字符才转义
-					if (specialCharacters.indexOf(line[i + 1]) >= 0)
+					if (SPECIAL_CHARACTERS.indexOf(line[i + 1]) >= 0)
 						lastMean = rList.length,
 						lastMeanOffset = ++i; //++i为了移动到下一位
 					r += line[i];
@@ -867,11 +862,11 @@
 					if (nextLoc >= len) { r += '&lt;'; break; }//都找不到>,那就转义输出吧
 					tmpString = line.slice(i + 1, nextLoc);//选出<>内的内容
 					if (isEmailOrURL) {//如果还有可能是 url 或 email
-						if (tmpString.match(regex_url)) {//内容是URL
+						if (tmpString.match(REGEX_URL)) {//内容是URL
 							r += tagFunc.link(tmpString, '', tmpString);
 							i = nextLoc; break;
 						}
-						if (tmpString.match(regex_email)) {//内容是邮箱
+						if (tmpString.match(REGEX_EMAIL)) {//内容是邮箱
 							r += tagFunc.email(tmpString);
 							i = nextLoc;break;
 						}
@@ -986,7 +981,7 @@
 
 		/**
 		 * 生成一个脚注内容的代码
-		 * @return {String} 脚注内容的HTML
+		 * @return {string} 脚注内容的HTML
 		 */
 		function handlerFoot(){
 			var list = footRefManager.getFootNotes();
