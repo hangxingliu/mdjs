@@ -4,6 +4,12 @@
 		{
 			"type": "node",
 			"request": "launch",
+			"name": "Debug test/vscode-debug/index.js",
+			"program": "${workspaceFolder}/test/vscode-debug/index.js"
+		},
+		{
+			"type": "node",
+			"request": "launch",
 			"name": "Mocha Tests",
 			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
 			"args": [
