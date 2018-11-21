@@ -21,7 +21,7 @@ describe('tag <pre>, <code>, ...', () => {
 			'```'
 		].join('\n'))).select('pre code[data-lang="javascript"]')
 			.length(1)
-			.html('let a = 10;\nconsole.log(a);'.replace(/ /g, '&#xA0;'));
+			.html('let a = 10;\nconsole.log(a);');
 
 		$(Mdjs.md2html([
 			'',
