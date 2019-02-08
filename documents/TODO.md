@@ -30,5 +30,5 @@
 - [ ] build.js 改成browserify打包(能生成sourcemaps)
 - [ ] 添加链接处理器
 - [ ] 完成英文版的文档
-- [ ] 相对于本身的参考式
+- [x] 相对于本身的参考式
 	- `Or leave it empty and use the [link text itself].`

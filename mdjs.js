@@ -1,5 +1,5 @@
 //@ts-check
-/// <reference path="./typescript/md-js.d.ts" />
+/// <reference path="./types.d.ts" />
 
 /**
  * @name MdJs
@@ -356,6 +356,14 @@
 		 */
 		function toLegalAttributeValue(str) {
 			return str.replace(REGEX_DEL_NONWORD_CHAR, '_').replace(/^_/, '').replace(/_$/, '');
+		}
+
+		/**
+		 * 通过名称解析参考式或脚注到详细信息对象
+		 * @param {string} linkName
+		 */
+		function resolveReferenceLinkOrFooterNote(linkName) {
+			return footRefManager.get(linkName) || render._resolveRefLink(linkName);
 		}
 
 		/**
@@ -762,7 +770,12 @@
 			var lastEmType = '*';
 
 			var nextLoc; //下一次的位置
-			var linkType; //可链接元素的类型:'s':Sup;'i':Image;'':Link
+
+			/**
+			 * 可链接元素的类型:'f':FootNote  'i':Image  'l':Link
+			 * @type {'f'|'i'|'l'}
+			 */
+			let linkType = 'l';
 			var linkContent, linkURL, linkTitle;
 
 			var imgCount = 0;//行内图片张数统计
@@ -775,9 +788,10 @@
 				switch (line[i]) {
 				case '\\'://转义字符\打头
 					//如果\后面的字符是可转义字符才转义
-					if (SPECIAL_CHARACTERS.indexOf(line[i + 1]) >= 0)
-						lastMean = rList.length,
+					if (SPECIAL_CHARACTERS.indexOf(line[i + 1]) >= 0) {
+						lastMean = rList.length;
 						lastMeanOffset = ++i; //++i为了移动到下一位
+					}
 					r += line[i];
 					break;
 
@@ -873,22 +887,39 @@
 					}
 					r+='<'//当作正常字符输出;
 					break;
-				case '!'://如果不是初判图片才输出
-					if (line[i + 1] != '[') r += '!'; break;
-				case '['://进入了可链接(Linkable)元素区块
-					//判断类型
-					if (line[i - 1] == '!' && (lastMean != rList.length || lastMeanOffset != i - 1)) linkType = 'i';//图片
-					else if (line[i + 1] == '^') linkType = 's';//脚注型
-					else linkType = '';//链接
-					var hadEmbedImg = 0;//是否在遍历的时候发现了内嵌图片的开始标记
+				case '!':
+					// Maybe a starting mark of the image ![description](image-uri)
+					// 可能是图片的起始标记, 检查下一个字符
+					if (line[i + 1] != '[')
+						r += '!'; // Just a exclamation mark (仅是一个感叹号字符)
+					break;
+				case '[': {
+					// Maybe a starting mark of the linkable elements:  (可能是可链接的元素起始标记)
+					//   ![description](image-url)
+					//   [description](link-url)  [description][reference-name]
+					//   [^footnote]
+
+					// Check linkable type (判断类型)
+					if (line[i - 1] == '!' && (lastMean != rList.length || lastMeanOffset != i - 1))
+						linkType = 'i'; //Image (图片)
+					else if (line[i + 1] == '^')
+						linkType = 'f';//脚注型
+					else
+						linkType = 'l';//链接
+
+					/** 是否在遍历的时候发现了内嵌图片的开始标记 */
+					let hadEmbedImg = 0;
+					/** 用来判断是否成功处理并输出了可链接元素 */
+					let done = 0;
+					let j = i + 1;
+
 					//循环为了读取到完整的可链接元素信息
-					//done用于判断是否获得完整信息后才结束(即是否成功输出了可链接元素)
-					for (var j = i + 1, done = 0; j < len; j++){
+					for (; j < len; j ++ ){
 						switch (line[j]) {
 						//如果是图片模式内部就不能有![,如果是链接模式内部就不能有[
 						case '!':
 							if (line[j + 1] != '[') break;//仅仅是感叹号
-							if (linkType != '') j = len;//图片模式和脚注模式跳过
+							if (linkType != 'l') j = len;//图片模式和脚注模式跳过
 							else hadEmbedImg = 1, j++;//标记内嵌图片,跳过[
 							break;
 						case '`'://跳过代码块
@@ -897,10 +928,12 @@
 							else j = nextLoc + tmpNumber - 1;
 							break;
 						case '[': j = len; break;//可链接元素内不允许再嵌套一次链接
-						case ']'://找到可链接元素的标题/文本部分结束符了
+						case ']':
+							//找到可链接元素的标题/文本部分结束符了
 							//先保存标题部分
 							linkContent = line.slice(i+1,j);
-							if(linkType=='s'){//如果是脚注,那就直接输出了
+							if (linkType == 'f') {
+								// 如果是脚注,那就直接输出了
 								tmpObject = footRefManager.get(linkContent);
 								if (tmpObject) {//该脚注信息是否存在
 									r += tagFunc.footNoteLink(tmpObject.url, tmpObject.title, tmpObject.id);
@@ -908,26 +941,44 @@
 								}
 								break;
 							}
+
+							/**
+							 * 可链接元素的结尾符号
+							 * @type {')'|']'}
+							 */
+							let toFind;
 							tmpString = line[j + 1];
-							var toFind;//可链接元素的结尾符号
-							if (tmpString == '(') toFind = ')';
-							else if (tmpString == '[' || (tmpString == ' ' && line[j + 2] == '[')) toFind = ']';
-							else { j = len; break; }//发现无法匹配格式](或] [,不是可链接元素
-							tmpNumber = tmpString == ' ' ? j + 3 : j + 2;//查找开始点,截取点
+							if (tmpString == '(') {
+								toFind = ')';
+							} else if (tmpString == '[' || (tmpString == ' ' && line[j + 2] == '[')) {
+								toFind = ']';
+							} else {
+								// 发现无法匹配格式 ]( 或是 ] [, 则有可能是直接一个参考式, 或者不是可链接元素
+								// Eg. [github-ref-link] or [just-a-string-with-bracket]
+								tmpObject = resolveReferenceLinkOrFooterNote(linkContent);
+								if (tmpObject) {
+									r += tagFunc.link(tmpObject.url, tmpObject.title,
+										handlerInline(linkContent, 0));
+									done = 1;
+									i = j;
+								}
+								j = len;
+								break;
+							}
+							tmpNumber = tmpString == ' ' ? j + 3 : j + 2; // 查找开始点,截取点
+
 							if ((nextLoc = line.indexOf(toFind, tmpNumber)) != -1) {//正常收尾
 								//如果之前有内嵌图片的标记头就跳过这个收尾
 								if (hadEmbedImg) { hadEmbedImg = 0; break; }
 								var titleableLink = line.slice(tmpNumber,nextLoc).trim();//保存链接内容:链接及链接标题部分
 								if (toFind == ']') {//参考式,则解析成真实链接内容
 									if (titleableLink.length == 0) titleableLink = linkContent;//如果留空,则表示参考式名称就是标题文本
-									tmpObject = footRefManager.get(titleableLink);
+									tmpObject = resolveReferenceLinkOrFooterNote(titleableLink);
 									if (!tmpObject) {
-										if (!(tmpObject = render._resolveRefLink(titleableLink))) {
-											//该参考式不存在
-											j = len; break;
-										}
+										//该参考式不存在
+										j = len; break;
 									}
-								}else{//行内式解析
+								} else {//行内式解析
 									tmpObject = analyzeTitleableLink(titleableLink);
 								}
 								linkURL = tmpObject.url;linkTitle = tmpObject.title || '';
@@ -948,12 +999,13 @@
 					}
 					if (!done && j >= len) {//没有有效的尾部,当正常字符串输出
 						switch(linkType){
-						case 's': r += '[^'; i++; break;
+						case 'f': r += '[^'; i++; break;
 						case 'i': r += '!['; break;
 						default: r += '[';
 						}
 					}
 					break;
+				}
 				default://基本字符
 					r+=line[i];
 				}

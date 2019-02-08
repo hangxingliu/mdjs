@@ -23,10 +23,13 @@ const kitchenSinkMarkdown = [
 	``,
 	`And reference links with title: [me][link with title] and [me2][link with title2]`,
 	``,
+	`Or leave it empty and use the [link text itself].`,
+	``,
 	`[arbitrary case-insensitive reference text]: https://www.mozilla.org`,
 	`[1]: http://slashdot.org`,
 	`[link with title2]: https://github.com/hangxingliu (hangxingliu)`,
-	`[link with title]: https://github.com/hangxingliu "hangxingliu"`
+	`[link with title]: https://github.com/hangxingliu "hangxingliu"`,
+	`[link text itself]: https://www.reddit.com`,
 ];
 
 describe('reference link', () => {
@@ -44,10 +47,11 @@ describe('reference link', () => {
 		Assert(html).doesNotContainSubString('[arbitrary case-insensitive reference text]')
 			.and.doesNotContainSubString('[1]');
 
-		let $links = $(html).select('a').length(4);
+		let $links = $(html).select('a').length(5);
 		$links.eq(0).attr('href', 'https://www.mozilla.org');
 		$links.eq(1).attr('href', 'http://slashdot.org');
 		$links.eq(2).attr('href', 'https://github.com/hangxingliu').attr('title', 'hangxingliu');
 		$links.eq(3).attr('href', 'https://github.com/hangxingliu').attr('title', 'hangxingliu');
+		$links.eq(4).attr('href', 'https://www.reddit.com');
 	});
 });
