@@ -2,13 +2,14 @@
 
 //@ts-check
 
-let babelCore = require('babel-core'),
-	fs = require('fs-extra'),
-	path = require('path');
+const babelCore = require('babel-core');
+const fs = require('fs-extra');
+const path = require('path');
 
-const mainInput = path.join(__dirname, 'mdjs.js');
-const polyfillInput = path.join(__dirname, 'polyfill.js');
-const output = path.join(__dirname, 'mdjs.min.js');
+const projectRoot = path.join(__dirname, '..');
+const mainInput = path.join(projectRoot, 'mdjs.js');
+const polyfillInput = path.join(projectRoot, 'polyfill.js');
+const output = path.join(projectRoot, 'mdjs.min.js');
 const plugins = [
 	"minify-mangle-names",
 	"minify-simplify",
@@ -19,11 +20,8 @@ const plugins = [
 	"transform-es2015-arrow-functions"
 ];
 
-
 fs.pathExists(output)
-	.then(exist => exist
-		? log(`Cleaning target file "${output}"...`).then(() => fs.remove(output))
-		: Promise.resolve())
+	.then(exist => exist && log(`Cleaning target file "${output}"...`).then(() => fs.remove(output)))
 	.then(() => log("Babel transforming..."))
 	.then(() => Promise.all([polyfillInput, mainInput].map(babel)))
 	.then(results => log("writing target file...")
