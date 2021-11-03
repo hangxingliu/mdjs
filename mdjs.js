@@ -46,6 +46,14 @@
 		return _createBlankString(len);
 	}
 
+	function safeEncodeURI(uri) {
+		try {
+			if (uri !== decodeURIComponent(uri))
+				return uri;
+		} catch (error) { }
+		return encodeURI(uri);
+	}
+
 	/**
 	 * Escape special characters in html string (HTML字符转义)
 	 * @param {string} html
@@ -159,10 +167,10 @@
 			heading: (level, name, content) =>
 				`<h${level} id="${name}" name="${name}">${content}</h${level}>`,
 			link: (uri, title, content) =>
-				`<a title="${escapedHTML(title)}" href="${encodeURI(uri)}">${content}</a>`,
+				`<a title="${escapedHTML(title)}" href="${safeEncodeURI(uri)}">${content}</a>`,
 			email: email => `<a href="mailto:${email}">${email}</a>`,
 			image: (uri, title, altText) =>
-				`<img alt="${escapedHTML(altText)}" title="${escapedHTML(title)}" src="${encodeURI(uri)}" />`,
+				`<img alt="${escapedHTML(altText)}" title="${escapedHTML(title)}" src="${safeEncodeURI(uri)}" />`,
 
 			table: (headContent, bodyContent) =>
 				`<table class="md_table"><thead>${headContent}</thead><tbody>${bodyContent}</tbody></table>`,
@@ -177,7 +185,7 @@
 			},
 
 			footNoteLink: (uri, title, content) =>
-				`<sup><a title="${escapedHTML(title)}" href="#${encodeURI(uri)}">${content}</a></sup>`,
+				`<sup><a title="${escapedHTML(title)}" href="#${safeEncodeURI(uri)}">${content}</a></sup>`,
 			footNote: (name, content) => `<li name="${name}" id="${name}">${content}</li>`,
 			footNoteName: id => `markdown_foot_${id}`
 		};
@@ -283,11 +291,14 @@
 			ret.url = match[1];
 			//去掉链接标题的包裹符号
 			var title = match[2], c1 = title[0], c2 = title[title.length-1];
-			if (title.length >= 2)
-				if ( ((c1 == '\'' || c1 == '"') && c1 == c2) ||
-						(c1 == '(' && c2 == ')') )
-					title = title.slice(1, -1);
-			ret.title = title;
+			if (title.length >= 2) {
+				if (((c1 == '\'' || c1 == '"') && c1 == c2) ||
+					(c1 == '(' && c2 == ')')) {
+					ret.title = title.slice(1, -1);
+					return ret;
+				}
+			}
+			ret.url = linkString;
 			return ret;
 		}
 
