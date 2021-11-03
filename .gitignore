@@ -2,6 +2,11 @@ assets
 test/env/dist
 test/generated_test_files
 
+
+# Mac files
+._*
+.DS_Store
+
 # ======= Node ignore file from https://github.com/github/gitignore =========
 
 # Logs

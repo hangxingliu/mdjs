@@ -7,7 +7,7 @@ let cheerio = require('cheerio');
  * @param {string} html
  */
 function validateHTML(html) {
-	let $ = cheerio.load(html);
+	let $ = cheerio.load(html, { xmlMode: true });
 
 	/**
 	 * @param {string} selector
