@@ -1,5 +1,7 @@
+v2
 assets
 .vscode
+yarn-error.log
 typescript
 .eslintrc.json
 cSpell.json

@@ -3,7 +3,7 @@
 
 /**
  * @name MdJs
- * @version 1.0.5 2021-11-04
+ * @version 1.0.5 2021-11-05
  * @author @hangxingliu (Liu Yue)
  * @description Mdjs 是一个轻量级的 Javascript 的 Markdown文件解析器
  */
@@ -873,12 +873,8 @@
 						}
 					}
 					break;
-				case '>'://有可能是HTML注释结尾
-					if (i >= 2 && line.slice(i - 2, i) == '--') r += '-->'; //HTML注释结尾
-					else r += '>'; //否则当成>字符输出
-					break;
 				case '<'://可能是自动链接或自动邮箱或者是HTML标签或者干脆就是一个<字符
-					if (line.slice(i + 1, i + 4) == '!--') { r += '<!--'; break; }//考虑一种特殊情况,HTML注释
+            if (line.slice(i + 1, i + 4) == '!--') { r += '<!--'; i += 3; break; }//考虑一种特殊情况,HTML注释
 					isEmailOrURL = true;//表示有可能是邮箱或URL
 					for (nextLoc = i + 1; nextLoc < len; nextLoc++){//找到>在哪里
 						if (line[nextLoc] == '>') break;

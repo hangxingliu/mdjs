@@ -15,10 +15,11 @@
 
 ### 1.0.5
 
-2021-11-04
+2021-11-05
 
 - 修复了URL转译问题
 - 修复了链接的title的问题
+- 修复了HTML注释的问题
 
 
 更多更新日志请参阅: [CHANGELOG.md](documents/CHANGELOG.md)

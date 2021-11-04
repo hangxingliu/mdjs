@@ -110,25 +110,30 @@ babel-generator@^6.26.0:
     source-map "^0.5.7"
     trim-right "^1.0.1"
 
-babel-helper-flip-expressions@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/babel-helper-flip-expressions/-/babel-helper-flip-expressions-0.3.0.tgz#f5b6394bd5219b43cf8f7b201535ed540c6e7fa2"
-  integrity sha512-kNGohWmtAG3b7tN1xocRQ5rsKkH/hpvZsMiGOJ1VwGJKhnwzR5KlB3rvKBaBPl5/IGHcopB2JN+r1SUEX1iMAw==
+babel-helper-evaluate-path@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/babel-helper-evaluate-path/-/babel-helper-evaluate-path-0.5.0.tgz#a62fa9c4e64ff7ea5cea9353174ef023a900a67c"
+  integrity sha512-mUh0UhS607bGh5wUMAQfOpt2JX2ThXMtppHRdRU1kL7ZLRWIXxoV2UIV1r2cAeeNeU1M5SB5/RSUgUxrK8yOkA==
+
+babel-helper-flip-expressions@^0.4.3:
+  version "0.4.3"
+  resolved "https://registry.yarnpkg.com/babel-helper-flip-expressions/-/babel-helper-flip-expressions-0.4.3.tgz#3696736a128ac18bc25254b5f40a22ceb3c1d3fd"
+  integrity sha1-NpZzahKKwYvCUlS19AoizrPB0/0=
 
 babel-helper-is-nodes-equiv@^0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/babel-helper-is-nodes-equiv/-/babel-helper-is-nodes-equiv-0.0.1.tgz#34e9b300b1479ddd98ec77ea0bbe9342dfe39684"
   integrity sha1-NOmzALFHnd2Y7HfqC76TQt/jloQ=
 
-babel-helper-mark-eval-scopes@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/babel-helper-mark-eval-scopes/-/babel-helper-mark-eval-scopes-0.3.0.tgz#b4731314fdd7a89091271a5213b4e12d236e29e8"
-  integrity sha512-nrho5Dg4vl0VUgURVpGpEGiwbst5JX7efIyDHFxmkCx/ocQFnrPt8ze9Kxl6TKjR29bJ7D/XKY1NMlSxOQJRbQ==
+babel-helper-mark-eval-scopes@^0.4.3:
+  version "0.4.3"
+  resolved "https://registry.yarnpkg.com/babel-helper-mark-eval-scopes/-/babel-helper-mark-eval-scopes-0.4.3.tgz#d244a3bef9844872603ffb46e22ce8acdf551562"
+  integrity sha1-0kSjvvmESHJgP/tG4izorN9VFWI=
 
-babel-helper-to-multiple-sequence-expressions@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/babel-helper-to-multiple-sequence-expressions/-/babel-helper-to-multiple-sequence-expressions-0.3.0.tgz#8da2275ccc26995566118f7213abfd9af7214427"
-  integrity sha512-1uCrBD+EAaMnAYh7hc944n8Ga19y3daEnoXWPYDvFVsxMCc1l8aDjksApaCEaNSSuewq8BEcff47Cy1PbLg2Gw==
+babel-helper-to-multiple-sequence-expressions@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/babel-helper-to-multiple-sequence-expressions/-/babel-helper-to-multiple-sequence-expressions-0.5.0.tgz#a3f924e3561882d42fcf48907aa98f7979a4588d"
+  integrity sha512-m2CvfDW4+1qfDdsrtf4dwOslQC3yhbgyBFptncp4wvtdrDHqueW7slsYv4gArie056phvQFhT2nRcGS4bnm6mA==
 
 babel-helpers@^6.24.1:
   version "6.24.1"
@@ -145,21 +150,22 @@ babel-messages@^6.23.0:
   dependencies:
     babel-runtime "^6.22.0"
 
-babel-plugin-minify-mangle-names@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/babel-plugin-minify-mangle-names/-/babel-plugin-minify-mangle-names-0.3.0.tgz#f28561bad0dd2f0380816816bb946e219b3b6135"
-  integrity sha512-PYTonhFWURsfAN8achDwvR5Xgy6EeTClLz+fSgGRqjAIXb0OyFm3/xfccbQviVi1qDXmlSnt6oJhBg8KE4Fn7Q==
+babel-plugin-minify-mangle-names@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/babel-plugin-minify-mangle-names/-/babel-plugin-minify-mangle-names-0.5.0.tgz#bcddb507c91d2c99e138bd6b17a19c3c271e3fd3"
+  integrity sha512-3jdNv6hCAw6fsX1p2wBGPfWuK69sfOjfd3zjUXkbq8McbohWy23tpXfy5RnToYWggvqzuMOwlId1PhyHOfgnGw==
   dependencies:
-    babel-helper-mark-eval-scopes "^0.3.0"
+    babel-helper-mark-eval-scopes "^0.4.3"
 
-babel-plugin-minify-simplify@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/babel-plugin-minify-simplify/-/babel-plugin-minify-simplify-0.3.0.tgz#14574cc74d21c81d3060fafa041010028189f11b"
-  integrity sha512-2M16ytQOCqBi7bYMu4DCWn8e6KyFCA108F6+tVrBJxOmm5u2sOmTFEa8s94tR9RHRRNYmcUf+rgidfnzL3ik9Q==
+babel-plugin-minify-simplify@^0.5.1:
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/babel-plugin-minify-simplify/-/babel-plugin-minify-simplify-0.5.1.tgz#f21613c8b95af3450a2ca71502fdbd91793c8d6a"
+  integrity sha512-OSYDSnoCxP2cYDMk9gxNAed6uJDiDz65zgL6h8d3tm8qXIagWGMLWhqysT6DY3Vs7Fgq7YUDcjOomhVUb+xX6A==
   dependencies:
-    babel-helper-flip-expressions "^0.3.0"
+    babel-helper-evaluate-path "^0.5.0"
+    babel-helper-flip-expressions "^0.4.3"
     babel-helper-is-nodes-equiv "^0.0.1"
-    babel-helper-to-multiple-sequence-expressions "^0.3.0"
+    babel-helper-to-multiple-sequence-expressions "^0.5.0"
 
 babel-plugin-transform-es2015-arrow-functions@^6.22.0:
   version "6.22.0"
