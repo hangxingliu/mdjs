@@ -1,5 +1,7 @@
 # md-js
 
+![Github Action Status](https://github.com/hangxingliu/mdjs/actions/workflows/v2.yaml/badge.svg?branch=master)
+
 A lightweight Markdown parser
 
 ## Installation
