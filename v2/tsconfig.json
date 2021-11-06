@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "target": "ES2020",
+    "sourceMap": true,
+    "outDir": "./test",
+    "skipLibCheck": true
+  },
+  "include": [
+    "src"
+  ]
+}

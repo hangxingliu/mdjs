@@ -1,7 +1,7 @@
 {
   "name": "md-js",
   "version": "2.0.0",
-  "description": "A Lightweight Markdown Parser",
+  "description": "A lightweight Markdown parser",
   "main": "libs/index.js",
   "dependencies": {},
   "devDependencies": {
@@ -15,6 +15,7 @@
     "babel-plugin-transform-merge-sibling-variables": "^6.9.0",
     "babel-plugin-transform-minify-booleans": "^6.9.0",
     "glob": "^7",
+    "rimraf": "^3.0.2",
     "ts-node": "*",
     "typescript": "^4"
   },
@@ -28,7 +29,10 @@
   ],
   "scripts": {
     "build": "node ./scripts/build.js",
-    "test": "ts-node ./test/index.ts"
+    "test": "ts-node ./src/test/runner.ts",
+    "test:build": "tsc -p tsconfig.json",
+    "test:inspect": "node --enable-source-maps --inspect-brk ./test/test/runner.js",
+    "clean": "rimraf libs browser test"
   },
   "author": "LiuYue",
   "license": "Apache-2.0",
