@@ -1,0 +1,38 @@
+{
+  "name": "md-js",
+  "version": "2.0.0",
+  "description": "A Lightweight Markdown Parser",
+  "main": "libs/index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7",
+    "@types/async": "^3.2.9",
+    "@types/glob": "^7.2.0",
+    "@types/node": "^10",
+    "async": "^3.2.2",
+    "babel-plugin-minify-mangle-names": "^0.5.0",
+    "babel-plugin-minify-simplify": "^0.5.1",
+    "babel-plugin-transform-merge-sibling-variables": "^6.9.0",
+    "babel-plugin-transform-minify-booleans": "^6.9.0",
+    "glob": "^7",
+    "ts-node": "*",
+    "typescript": "^4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hangxingliu/mdjs"
+  },
+  "keywords": [
+    "markdown",
+    "parser"
+  ],
+  "scripts": {
+    "build": "node ./scripts/build.js",
+    "test": "ts-node ./test/index.ts"
+  },
+  "author": "LiuYue",
+  "license": "Apache-2.0",
+  "optionalDependencies": {
+    "prettier": "^2.4.1"
+  }
+}

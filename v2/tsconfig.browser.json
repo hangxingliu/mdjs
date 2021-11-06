@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "target": "ES5",
+    "sourceMap": true,
+    "outDir": "./browser",
+    "skipLibCheck": true
+  },
+  "files": [
+    "src/index.ts"
+  ]
+}

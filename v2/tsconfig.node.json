@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": false,
+    "target": "ES2020",
+    "sourceMap": true,
+    "outDir": "./libs",
+    "skipLibCheck": true
+  },
+  "files": [
+    "src/index.ts"
+  ]
+}
