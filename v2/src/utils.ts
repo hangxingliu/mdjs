@@ -189,6 +189,19 @@ export class ListStack implements ListStackInterface {
   };
 }
 
+/** Table of Contents */
+export class ToC {
+  readonly title: string[] = [];
+  readonly id: string[] = [];
+  readonly level: number[] = [];
+  push = (title: string, id: string, level: number) => {
+    this.title.push(title);
+    this.id.push(id);
+    this.level.push(level);
+  }
+  length = () => this.title.length;
+}
+
 const MATCH_UL = /^[\*\-\+] +\S*/g;
 const MATCH_OL = /^\d+\. +\S*/g;
 

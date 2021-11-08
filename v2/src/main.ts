@@ -12,6 +12,7 @@ import {
   ReferenceAndFootnote,
   resolveLinkString,
   toLegalAttributeValue,
+  ToC,
 } from "./utils";
 import type {
   ReferenceLinkDescriptor,
@@ -145,7 +146,6 @@ const enum LinkType {
   LINK = 4,
 }
 
-
 const defaultTabWidth = 4;
 
 const MATCH_HTML_TAG = /<\/?[^<>]+>/g;
@@ -163,17 +163,15 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
   let codeBlockPendingLines: string[] = null;
   let codeLanguage: string;
 
-  // 当前行左端的空格字符数量, 1个Tab = 4个空格
-  let leftSpaces = 0;
+  /**
+   * How many spaces/tab in front of the line. Tab character is calculated as `tabWidth`
+   * 当前行最前面有几个空格(1 Tab = `tabWidth`个空格)
+   */
+  let leadingSpaces: number;
 
-  let tocPosition = -1; //哪儿要输出目录结构
-
-  //记录目录每个节点的标题
-  let tocTitle: string[] = [];
-  //记录目录每隔节点跳转到URI(#HASH)
-  let tocUri: string[] = [];
-  //记录目录每个节点的层次
-  let tocLevel: number[] = [];
+  /** 哪儿要输出目录结构 */
+  let tocPosition = -1;
+  const toc = new ToC();
 
   let isParagraphFinished = true; //文本段落是否已经结束, 是否已经插入过了</p>
   let isLastLineEndWithNewLine = false; //文本段落中上一行是否需要换行(结尾有两及个以上的空白字符)
@@ -203,12 +201,12 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
     }
 
     // 计算行前空格数
-    leftSpaces = countLeadingSpaces(currLine, tabWidth);
+    leadingSpaces = countLeadingSpaces(currLine, tabWidth);
 
     // 列表行
     let listItemType = getListTypeFromLine(stripedLine, options.gfm);
     if (listItemType != 0) {
-      resultMarkdown += processList(leftSpaces, listItemType, stripedLine, context);
+      resultMarkdown += processList(leadingSpaces, listItemType, stripedLine, context);
       continue;
     }
     resultMarkdown += processListEnd(context);
@@ -217,14 +215,14 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
     if (stripedLine.length == 0) {
       //如果段落还没有结束了, 就结束当前段落然后输出</p>
       if (!isParagraphFinished) {
-        resultMarkdown += (isLastLineEndWithNewLine ? render.br : "") + render.p[1];
+        resultMarkdown += (isLastLineEndWithNewLine ? render.br : "") + render.p[1] + '\n';
         isParagraphFinished = true;
       }
       continue;
     }
 
     // 没有 Tab 键在行前
-    if (leftSpaces < tabWidth) {
+    if (leadingSpaces < tabWidth) {
       if (stripedLine.startsWith("```")) {
         // 进入代码块
         codeLanguage = stripedLine.slice(3).trim();
@@ -243,13 +241,12 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
             //为了去掉结尾的#号
             break;
 
-        let headerText = stripedLine.slice(headingLevel, cutEnd + 1);
-        //tocMark 给当前标题标记的 ID 和 name,为了能让TOC目录点击跳转
-        let headerName = (headerText = processLine(headerText, 0, context));
-        tocLevel.push(headingLevel);
-        tocTitle.push((headerName = headerName.trim().replace(MATCH_HTML_TAG, "")));
-        tocUri.push((headerName = toLegalAttributeValue(headerName)));
-        resultMarkdown += render.heading(headingLevel, headerName, headerText);
+        let headingHTML = stripedLine.slice(headingLevel, cutEnd + 1);
+        headingHTML = processLine(headingHTML, 0, context);
+        const headingText = headingHTML.trim().replace(MATCH_HTML_TAG, "");
+        const headingId = toLegalAttributeValue(headingText);
+        toc.push(headingText, headingId, headingLevel);
+        resultMarkdown += render.heading(headingLevel, headingId, headingHTML);
         continue;
       }
 
@@ -363,12 +360,11 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
           if (nextLine[0] == "=") level = 1;
           else if (nextLine[0] == "-") level = 2;
 
-          let headerText = processLine(stripedLine, 0, context);
-          let headerName = headerText;
-          tocLevel.push(level);
-          tocTitle.push((headerName = headerName.trim().replace(MATCH_HTML_TAG, "")));
-          tocUri.push((headerName = toLegalAttributeValue(headerName)));
-          resultMarkdown += render.heading(level, headerName, headerText);
+          let headingHTML = processLine(stripedLine, 0, context);
+          let headingText = headingHTML.trim().replace(MATCH_HTML_TAG, "");
+          let headingId = toLegalAttributeValue(headingText);
+          toc.push(headingText, headingId, level);
+          resultMarkdown += render.heading(level, headingId, headingHTML);
           i++; //跳过下一行
           continue;
         }
@@ -412,7 +408,7 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
   if (tocPosition != -1)
     resultMarkdown =
       resultMarkdown.slice(0, tocPosition) +
-      processTOC(tocTitle, tocUri, tocLevel, context) +
+      processTOC(toc, context) +
       resultMarkdown.slice(tocPosition);
 
   if (resultMarkdown.endsWith('\n'))
@@ -516,19 +512,20 @@ export function getHeadings(lines: string[], options: GetHeadingOptions = {}) {
 //   |_| \___/ \____|
 //
 //
-function processTOC(tocTitle: string[], tocUri: string[], tocLevel: number[], context: ProcessLinesContext): string {
+function processTOC(toc: ToC, context: ProcessLinesContext): string {
   const { render } = context;
   const levelStack: number[] = [];
   let lastLevel: number;
   let html = render.toc[0];
   let liHTML: string;
-
-  for (let i = 0; i < tocTitle.length; i++) {
-    liHTML = render.tocItem(tocUri[i], tocTitle[i]);
-    if (levelStack.length == 0 || tocLevel[i] > lastLevel) {
+  let currLevel: number;
+  for (let i = 0, len = toc.length(); i < len; i++) {
+    liHTML = render.tocItem(toc.id[i], toc.title[i]);
+    currLevel = toc.level[i];
+    if (levelStack.length == 0 || currLevel > lastLevel) {
       html += render.tocList[0] + liHTML;
-      levelStack.push((lastLevel = tocLevel[i]));
-    } else if (tocLevel[i] == lastLevel) {
+      levelStack.push((lastLevel = currLevel));
+    } else if (currLevel == lastLevel) {
       html += liHTML;
     } else {
       html += render.tocList[1];
