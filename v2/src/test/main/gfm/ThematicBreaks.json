@@ -1,0 +1,49 @@
+[
+  {
+    "id": "Example 13",
+    "input": "***\n---\n___",
+    "output": "<hr />\n<hr />\n<hr />"
+  },
+  {
+    "id": "Example 14",
+    "comment": "Wrong characters",
+    "input": "+++",
+    "output": "<p>+++</p>"
+  },
+  {
+    "id": "Example 15",
+    "comment": "Wrong characters",
+    "input": "===",
+    "output": "<p>===</p>"
+  },
+  {
+    "id": "Example 16",
+    "comment": "Not enough characters",
+    "input": "--\n**\n__",
+    "output": "<p>--\n**\n__</p>"
+  },
+  {
+    "id": "Example 17",
+    "comment": "One to three spaces indent are allowed",
+    "input": " ***\n  ***\n   ***",
+    "output": "<hr />\n<hr />\n<hr />"
+  },
+  {
+    "id": "Example 18",
+    "comment": "Four spaces is too many",
+    "input": "    ***",
+    "output": "<pre><code>***\n</code></pre>"
+  },
+  {
+    "id": "Example 19",
+    "comment": "Four spaces is too many",
+    "input": "Foo\n    ***",
+    "output": "<p>Foo\n***</p>"
+  },
+  {
+    "id": "Example 20",
+    "comment": "More than three characters may be used",
+    "input": "_____________________________________",
+    "output": "<hr />"
+  }
+]
