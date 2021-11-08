@@ -18,7 +18,23 @@ export type ProcessLineContext = {
   render: MdjsRenderer;
   refs: ReferenceAndFootnoteInterface;
 };
+
+export type GetHeadingOptions = ProcessLinesOptions & {
+  parseLine?: boolean;
+  limit?: number;
+  maxLevel?: number;
+}
 //#endregion options
+
+//#region result
+export type HeadingItem = {
+  level: number;
+  content: string;
+  text?: string;
+  start?: [number, number];
+  end?: [number, number];
+}
+//#endregion result
 
 export interface MdjsRenderer {
   hr: string;

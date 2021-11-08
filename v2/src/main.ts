@@ -22,6 +22,8 @@ import type {
   ProcessLinesOptions,
   ProcessLinesContext,
   MarkdownStringifyOptions,
+  GetHeadingOptions,
+  HeadingItem,
 } from "./types";
 
 export function md2html(markdown: string, options?: MarkdownStringifyOptions) {
@@ -416,6 +418,94 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
   if (resultMarkdown.endsWith('\n'))
     resultMarkdown = resultMarkdown.slice(0, resultMarkdown.length - 1);
   return resultMarkdown;
+}
+
+export function getHeadings(lines: string[], options: GetHeadingOptions = {}) {
+  const length = lines.length;
+
+  let { tabWidth, limit, maxLevel, parseLine } = options;
+  if (!Number.isInteger(tabWidth) || tabWidth > 0 === false) tabWidth = defaultTabWidth;
+  if (typeof maxLevel !== 'number') maxLevel = 999;
+  else if (maxLevel < 1) maxLevel = 1;
+
+  let currLine = "";
+  let stripedLine = "";
+  let inCodeBlock = false;
+  let leadingSpaces = 0;
+  let headingLevel: number;
+  const result: HeadingItem[] = [];
+
+  for (let i = 0; i < length; i++) {
+    currLine = lines[i];
+    stripedLine = currLine.trim();
+
+    if (inCodeBlock) {
+      // is code block end?
+      if (stripedLine == "```")
+        inCodeBlock = false;
+      continue;
+    }
+    leadingSpaces = countLeadingSpaces(currLine, tabWidth);
+    const listItemType = getListTypeFromLine(stripedLine, options.gfm);
+    if (listItemType != 0)
+      continue;
+
+    if (leadingSpaces < tabWidth) {
+      if (stripedLine.startsWith("```")) {
+        inCodeBlock = true;
+        continue;
+      }
+      headingLevel = isHeading(stripedLine);
+      if (headingLevel > 0 && headingLevel <= maxLevel) {
+        let cutEnd = stripedLine.length - 1; //标题内容的结尾位置
+        for (; cutEnd > headingLevel; cutEnd--)
+          if (stripedLine[cutEnd] != "#")
+            //为了去掉结尾的#号
+            break;
+        const headerText = stripedLine.slice(headingLevel, cutEnd + 1);
+        result.push({ level: headingLevel, content: headerText });
+        if (result.length >= limit) return result;
+        continue;
+      }
+      //横线
+      if (isHorizontalRule(stripedLine, options.gfm)) {
+        continue;
+      }
+    } else {
+      // leftSpaces >= tabWidth
+      if (i === 0 || lines[i - 1].trim().length === 0) {
+        for (let j = i; j < length; j++) {
+          if (lines[j].trim().length == 0) {
+            continue;
+          }
+          if ((leadingSpaces = countLeadingSpaces(lines[j], tabWidth)) < tabWidth)
+            break;
+        }
+        continue;
+      } else {
+        // remove useless leading spaces
+        currLine = currLine.replace(/^\s+/, '');
+      }
+    }
+    // has next line
+    if (i + 1 < length) {
+      let nextLine = lines[i + 1];
+      if (countLeadingSpaces(nextLine, tabWidth) < tabWidth) {
+        nextLine = nextLine.trim();
+        if (isHorizontalRule(nextLine, options.gfm)) {
+          // 这行是标题
+          let level = 3; // 默认三级
+          if (nextLine[0] == "=") level = 1;
+          else if (nextLine[0] == "-") level = 2;
+          if (level <= maxLevel) {
+            result.push({ level, content: stripedLine });
+            if (result.length >= limit) return result;
+          }
+        }
+      }
+    }
+  }
+  return result;
 }
 
 //
