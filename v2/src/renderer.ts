@@ -53,7 +53,9 @@ export class DefaultMdjsRenderer implements MdjsRenderer {
     return html.join("\n");
   };
 
-  codeBlock = (language: string, code: string) => `<pre><code data-lang="${language}">${code}</code></pre>`;
+  codeBlock = (language: string, code: string) =>
+    language ? `<pre><code data-lang="${language}">${code}\n</code></pre>`
+      : `<pre><code>${code}\n</code></pre>`;
   quoteBlock = (html: string) => `<blockquote>${html}</blockquote>`;
 
   toc: [string, string] = ['<div class="toc>', "</div>"];

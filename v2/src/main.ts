@@ -283,7 +283,7 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
 
       //横线
       if (isHorizontalRule(stripedLine, options.gfm)) {
-        resultMarkdown += render.hr;
+        resultMarkdown += render.hr + '\n';
         continue;
       }
 
@@ -314,53 +314,62 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
           continue;
         }
       }
-    } else if (i == 0 || lines[i - 1].trim().length == 0) {
-      // 使用开头tab表示的代码
-      codeBlockPendingLines = [];
+    } else {
+      // leftSpaces >= tabWidth
+      if (i === 0 || lines[i - 1].trim().length === 0) {
+        // 使用开头tab表示的代码
+        codeBlockPendingLines = [];
 
-      // space是为了中间的空白行,
-      // endl是为了保存代码最后有效行在哪
-      let space = "";
-      let endL = i;
-      let leftTab: number;
-      for (let j = i; j < length; j++) {
-        // 空白行,记入space,这样做是为了如果代码块最后有空行而不输出
-        if (lines[j].trim().length == 0) {
-          space += "\n";
-          continue;
+        // space是为了中间的空白行,
+        // endl是为了保存代码最后有效行在哪
+        let space = "";
+        let endL = i;
+        let leftTab: number;
+        for (let j = i; j < length; j++) {
+          // 空白行,记入space,这样做是为了如果代码块最后有空行而不输出
+          if (lines[j].trim().length == 0) {
+            space += "\n";
+            continue;
+          }
+          // 空白小于一个Tab键了,退出代码块
+          if ((leftTab = countLeadingSpaces(lines[j], tabWidth)) < tabWidth) break;
+
+          codeBlockPendingLines.push(space + getSpaces(leftTab - tabWidth) + escapeHTML(lines[j].trim()));
+          // 重置空白行和记录最后有效行
+          space = "";
+          endL = j;
         }
-        // 空白小于一个Tab键了,退出代码块
-        if ((leftTab = countLeadingSpaces(lines[j], tabWidth)) < tabWidth) break;
-
-        codeBlockPendingLines.push(space + getSpaces(leftTab - 2) + escapeHTML(lines[j].trim()));
-        // 重置空白行和记录最后有效行
-        space = "";
-        endL = j;
+        resultMarkdown += render.codeBlock("", codeBlockPendingLines.join("\n"));
+        codeBlockPendingLines = null;
+        i = endL;
+        continue;
+      } else {
+        // remove useless leading spaces
+        currLine = currLine.replace(/^\s+/, '');
       }
-      resultMarkdown += render.codeBlock("", codeBlockPendingLines.join("\n"));
-      codeBlockPendingLines = null;
-      i = endL;
-      continue;
     }
 
     // 普通文本正常的一行
     // 真的是上面注释的那样吗?其实如果它的下一行是---或===的话,那这一行就是标题行了
     if (i + 1 < length) {
-      let nextLine = lines[i + 1].trim();
-      if (isHorizontalRule(nextLine, options.gfm)) {
-        // 这行是标题
-        let level = 3; // 默认三级
-        if (nextLine[0] == "=") level = 1;
-        else if (nextLine[0] == "-") level = 2;
+      let nextLine = lines[i + 1];
+      if (countLeadingSpaces(nextLine, tabWidth) < tabWidth) {
+        nextLine = nextLine.trim();
+        if (isHorizontalRule(nextLine, options.gfm)) {
+          // 这行是标题
+          let level = 3; // 默认三级
+          if (nextLine[0] == "=") level = 1;
+          else if (nextLine[0] == "-") level = 2;
 
-        let headerText = processLine(stripedLine, 0, context);
-        let headerName = headerText;
-        tocLevel.push(level);
-        tocTitle.push((headerName = headerName.trim().replace(MATCH_HTML_TAG, "")));
-        tocUri.push((headerName = toLegalAttributeValue(headerName)));
-        resultMarkdown += render.heading(level, headerName, headerText);
-        i++; //跳过下一行
-        continue;
+          let headerText = processLine(stripedLine, 0, context);
+          let headerName = headerText;
+          tocLevel.push(level);
+          tocTitle.push((headerName = headerName.trim().replace(MATCH_HTML_TAG, "")));
+          tocUri.push((headerName = toLegalAttributeValue(headerName)));
+          resultMarkdown += render.heading(level, headerName, headerText);
+          i++; //跳过下一行
+          continue;
+        }
       }
     }
 
@@ -376,6 +385,8 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
       if (isParagraphFinished) {
         partialHTML = render.p[0] + partialHTML;
         isLastLineEndWithNewLine = false;
+      } else {
+        partialHTML = '\n' + partialHTML;
       }
       //如果解析选项要求强制换行(**并且不是段落首行**) 或 上一行末尾含有至少两个空格要求(换行)
       //	就在此行前面加上换行符
@@ -402,6 +413,8 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
       processTOC(tocTitle, tocUri, tocLevel, context) +
       resultMarkdown.slice(tocPosition);
 
+  if (resultMarkdown.endsWith('\n'))
+    resultMarkdown = resultMarkdown.slice(0, resultMarkdown.length - 1);
   return resultMarkdown;
 }
 
