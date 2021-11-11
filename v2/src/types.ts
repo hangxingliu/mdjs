@@ -4,9 +4,12 @@ export type MarkdownStringifyOptions = ProcessLinesOptions & {
   renderer?: MdjsRenderer;
 };
 export type ProcessLinesOptions = {
+  file?: string;
   tabWidth?: number;
   alwaysNewline?: boolean;
   gfm?: boolean;
+  /** add `id` and `name` for heading tag */
+  headingId?: boolean;
 };
 export type ProcessLinesContext = {
   render: MdjsRenderer;
@@ -105,4 +108,14 @@ export interface ListStackInterface {
   getIndexAndIncr(): number
   push(level: number, type: ListType): void;
   pop(): void;
+}
+
+export type EmbeddedMarkdownResolver = (file: string, path: string) => Promise<string[]>;
+export const enum EmbeddedMarkdownSyntax {
+  /** \`markdown:include.md\` */
+  inlineCode = 'inlineCode',
+  /** [!INCLUDE \[Common Section\](../includes/common.md)] */
+  link = 'link',
+  /** {!include.md!} */
+  python = 'python',
 }
