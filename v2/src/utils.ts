@@ -11,7 +11,7 @@ export function safeEncodeURI(uri: string): string {
   if (uri === null || uri === undefined) return "";
   try {
     if (uri !== decodeURIComponent(uri)) return uri;
-  } catch (error) {}
+  } catch (error) { }
   return encodeURI(uri);
 }
 
@@ -90,13 +90,19 @@ export function countLeadingSpaces(str: string, tabWidth: number): number {
   return count;
 }
 
-/**
- * @returns `0`: it is not a heading
- */
-export function isHeading(stripedLine: string): number {
-  let level = 0;
-  for (; level < stripedLine.length; level++) if (stripedLine[level] != "#") break;
-  return level;
+export function isATXHeading(stripedLine: string, gfm: boolean): { level: number, content: string } {
+  let len = stripedLine.length;
+  if (len < 1) return;
+  for (let level = 0; level < len; level++) {
+    const ch = stripedLine[level];
+    if (ch === "#") continue;
+    if (level === 0 || level > 6) return;
+    if (gfm && ch !== '\t' && ch !== ' ') return;
+    return {
+      level,
+      content: stripedLine.slice(level).replace(/#+$/, '').trim(),
+    };
+  }
 }
 
 const MATCH_TRAILING_SPACES = /\s+$/;
@@ -117,7 +123,7 @@ export function toLegalAttributeValue(str: string): string {
 export class ReferenceAndFootnote implements ReferenceAndFootnoteInterface {
   private readonly map = new Map<string, ReferenceLinkDescriptor | FootnoteDescriptor>();
   readonly footnotes: FootnoteDescriptor[] = [];
-  constructor(private resolveFootnoteLink: (index: number) => string) {}
+  constructor(private resolveFootnoteLink: (index: number) => string) { }
 
   addReference = (name: string, content: ReferenceLinkDescriptor) => {
     this.map.set(name.toLowerCase(), content);
