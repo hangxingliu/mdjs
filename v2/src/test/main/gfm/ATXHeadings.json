@@ -1,0 +1,20 @@
+[
+  {
+    "id": "Example 32",
+    "comment": "Simple headings",
+    "input": "# foo\n## foo\n### foo\n#### foo\n##### foo\n###### foo",
+    "output": "<h1>foo</h1>\n<h2>foo</h2>\n<h3>foo</h3>\n<h4>foo</h4>\n<h5>foo</h5>\n<h6>foo</h6>"
+  },
+  {
+    "id": "Example 33",
+    "comment": "More than six # characters is not a heading",
+    "input": "####### foo",
+    "output": "<p>####### foo</p>"
+  },
+  {
+    "id": "Example 34",
+    "comment": "At least one space is required between the # characters and the heading’s contents, unless the heading is empty",
+    "input": "#5 bolt\n\n#hashtag",
+    "output": "<p>#5 bolt</p>\n<p>#hashtag</p>"
+  }
+]

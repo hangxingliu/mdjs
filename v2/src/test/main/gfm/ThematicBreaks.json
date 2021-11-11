@@ -45,5 +45,35 @@
     "comment": "More than three characters may be used",
     "input": "_____________________________________",
     "output": "<hr />"
+  },
+  {
+    "id": "Example 21",
+    "comment": "Spaces are allowed between the characters",
+    "input": " - - -",
+    "output": "<hr />"
+  },
+  {
+    "id": "Example 22",
+    "comment":"Spaces are allowed between the characters",
+    "input": " **  * ** * ** * **",
+    "output": "<hr />"
+  },
+  {
+    "id": "Example 23",
+    "comment": "Spaces are allowed between the characters",
+    "input": "-     -      -      -",
+    "output": "<hr />"
+  },
+  {
+    "id": "Example 24",
+    "comment": "Spaces are allowed at the end",
+    "input": "- - - -    ",
+    "output": "<hr />"
+  },
+  {
+    "id": "Example 25",
+    "comment": "However, no other characters may occur in the line",
+    "input": "_ _ _ _ a\n\na------\n\n---a---",
+    "output": "<p>_ _ _ _ a</p>\n<p>a------</p>\n<p>---a---</p>"
   }
 ]
