@@ -18,7 +18,8 @@ export class DefaultMdjsRenderer implements MdjsRenderer {
   li = (index: number, content: string) => `<li>${content}</li>`;
 
   heading = (level: number, name: string, contentHTML: string) =>
-    `<h${level} id="${name}" name="${name}">${contentHTML}</h${level}>`;
+    name ? `<h${level} id="${name}" name="${name}">${contentHTML}</h${level}>`
+      : `<h${level}>${contentHTML}</h${level}>`;
 
   link = (uri: string, title: string, contentHTML: string) =>
     `<a title="${escapeHTML(title)}" href="${safeEncodeURI(uri)}">${contentHTML}</a>`;
@@ -60,7 +61,9 @@ export class DefaultMdjsRenderer implements MdjsRenderer {
 
   toc: [string, string] = ['<div class="toc>', "</div>"];
   tocList: [string, string] = ["<ol>", "</ol>"];
-  tocItem = (uri: string, title: string) => `<a href="#${uri}"><li>${escapeHTML(title)}</li></a>`;
+  tocItem = (uri: string, title: string) => uri
+    ? `<a href="${uri}"><li>${escapeHTML(title)}</li></a>`
+    : `<li>${escapeHTML(title)}</li>`;
 
   constructor(classname?: string) {
     this.classname = classname || "md_";

@@ -5,7 +5,7 @@ import {
   getTrailingSpaces,
   getListTypeFromLine,
   getSpaces,
-  isHeading,
+  isATXHeading,
   isHorizontalRule,
   ListStack,
   OrderedListType,
@@ -154,6 +154,7 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
   const length = lines.length;
 
   const { render, inQuote } = context;
+  const enabledHeadingId = options.headingId !== false;
   let { tabWidth, alwaysNewline } = options;
   if (!Number.isInteger(tabWidth) || tabWidth > 0 === false) tabWidth = defaultTabWidth;
 
@@ -176,7 +177,7 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
   let isParagraphFinished = true; //文本段落是否已经结束, 是否已经插入过了</p>
   let isLastLineEndWithNewLine = false; //文本段落中上一行是否需要换行(结尾有两及个以上的空白字符)
 
-  let headingLevel = 0;
+  let atxHeading: { level: number, content: string };
 
   let inlineStats: ProcessLineStats = {};
   // 目前循环正在处理着的行
@@ -231,22 +232,16 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
       }
 
       //是标题吗?多少个标题
-      headingLevel = isHeading(stripedLine);
+      atxHeading = isATXHeading(stripedLine, options.gfm);
 
       //是标题
-      if (headingLevel > 0) {
-        let cutEnd = stripedLine.length - 1; //标题内容的结尾位置
-        for (; cutEnd > headingLevel; cutEnd--)
-          if (stripedLine[cutEnd] != "#")
-            //为了去掉结尾的#号
-            break;
-
-        let headingHTML = stripedLine.slice(headingLevel, cutEnd + 1);
+      if (atxHeading) {
+        let headingHTML = atxHeading.content;
         headingHTML = processLine(headingHTML, 0, context);
         const headingText = headingHTML.trim().replace(MATCH_HTML_TAG, "");
-        const headingId = toLegalAttributeValue(headingText);
-        toc.push(headingText, headingId, headingLevel);
-        resultMarkdown += render.heading(headingLevel, headingId, headingHTML);
+        const headingId = enabledHeadingId ? toLegalAttributeValue(headingText) : null;
+        toc.push(headingText, headingId, atxHeading.level);
+        resultMarkdown += render.heading(atxHeading.level, headingId, headingHTML) + '\n';
         continue;
       }
 
@@ -362,9 +357,9 @@ export function processLines(lines: string[], context: ProcessLinesContext, opti
 
           let headingHTML = processLine(stripedLine, 0, context);
           let headingText = headingHTML.trim().replace(MATCH_HTML_TAG, "");
-          let headingId = toLegalAttributeValue(headingText);
+          let headingId = enabledHeadingId ? toLegalAttributeValue(headingText) : null;
           toc.push(headingText, headingId, level);
-          resultMarkdown += render.heading(level, headingId, headingHTML);
+          resultMarkdown += render.heading(level, headingId, headingHTML) + '\n';
           i++; //跳过下一行
           continue;
         }
@@ -451,15 +446,10 @@ export function getHeadings(lines: string[], options: GetHeadingOptions = {}) {
         inCodeBlock = true;
         continue;
       }
-      headingLevel = isHeading(stripedLine);
-      if (headingLevel > 0 && headingLevel <= maxLevel) {
-        let cutEnd = stripedLine.length - 1; //标题内容的结尾位置
-        for (; cutEnd > headingLevel; cutEnd--)
-          if (stripedLine[cutEnd] != "#")
-            //为了去掉结尾的#号
-            break;
-        const headerText = stripedLine.slice(headingLevel, cutEnd + 1);
-        result.push({ level: headingLevel, content: headerText });
+      const atxHeading = isATXHeading(stripedLine, options.gfm);
+      if (atxHeading && atxHeading.level <= maxLevel) {
+        const headerText = atxHeading.content;
+        result.push({ level: atxHeading.level, content: headerText });
         if (result.length >= limit) return result;
         continue;
       }
@@ -517,16 +507,19 @@ function processTOC(toc: ToC, context: ProcessLinesContext): string {
   const levelStack: number[] = [];
   let lastLevel: number;
   let html = render.toc[0];
-  let liHTML: string;
+
+  let itemHTML: string;
   let currLevel: number;
+  let tocId: string;
   for (let i = 0, len = toc.length(); i < len; i++) {
-    liHTML = render.tocItem(toc.id[i], toc.title[i]);
+    tocId = toc.id[i];
+    itemHTML = render.tocItem(tocId ? `#${tocId}` : null, toc.title[i]);
     currLevel = toc.level[i];
     if (levelStack.length == 0 || currLevel > lastLevel) {
-      html += render.tocList[0] + liHTML;
+      html += render.tocList[0] + itemHTML;
       levelStack.push((lastLevel = currLevel));
     } else if (currLevel == lastLevel) {
-      html += liHTML;
+      html += itemHTML;
     } else {
       html += render.tocList[1];
       levelStack.pop();
